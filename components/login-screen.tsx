@@ -90,7 +90,7 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
             <Flower2 className="w-8 h-8 text-white" />
           </div>
           <div>
-            <CardTitle className="text-3xl font-serif text-slate-800">FloralCraft</CardTitle>
+            <CardTitle className="text-3xl font-serif text-slate-800">FLOREVER</CardTitle>
             <CardDescription className="text-slate-600">Arreglos florales personalizados</CardDescription>
           </div>
         </CardHeader>

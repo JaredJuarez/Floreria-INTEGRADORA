@@ -152,7 +152,7 @@ export function AdminDashboard({ onNavigate, onLogout }: AdminDashboardProps) {
               <div className="flex flex-col md:flex-row items-center justify-between">
                 <div className="mb-6 md:mb-0">
                   <h2 className="text-3xl font-serif font-bold mb-2">Panel de Control</h2>
-                  <p className="text-amber-100 text-lg mb-4">Administra todos los aspectos de FloralCraft</p>
+                  <p className="text-amber-100 text-lg mb-4">Administra todos los aspectos de FLOREVER</p>
                 </div>
                 <div className="hidden md:block">
                   <div className="w-32 h-32 bg-white/20 rounded-full flex items-center justify-center">

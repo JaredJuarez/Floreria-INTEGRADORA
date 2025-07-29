@@ -17,7 +17,7 @@ export function FloristProfile({ onNavigate }: FloristProfileProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [profileData, setProfileData] = useState({
     fullName: "Carmen López García",
-    email: "carmen.lopez@floralcraft.com",
+    email: "carmen.lopez@FLOREVER.com",
     phone: "+1 234 567 8901",
     joinDate: "2023-01-15",
     completedOrders: 156,

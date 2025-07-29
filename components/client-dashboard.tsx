@@ -43,9 +43,9 @@ export function ClientDashboard({ onNavigate, onLogout }: ClientDashboardProps) 
                 <Flower2 className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-serif font-semibold text-slate-800">FloralCraft</h1>
+                <h1 className="text-xl font-serif font-semibold text-slate-800">FLOREVER</h1>
                 <p className="text-sm text-slate-600">¡Hola, María!</p>
-              </div>
+              </div>    
             </div>
             <div className="flex items-center space-x-3">
               <Button

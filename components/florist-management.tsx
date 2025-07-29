@@ -31,7 +31,7 @@ const initialFlorists: Florist[] = [
     id: "1",
     fullName: "Carmen López García",
     phone: "+1 234 567 8901",
-    email: "carmen.lopez@floralcraft.com",
+    email: "carmen.lopez@FLOREVER.com",
     isActive: true,
     joinDate: "2023-01-15",
     completedOrders: 156,
@@ -41,7 +41,7 @@ const initialFlorists: Florist[] = [
     id: "2",
     fullName: "María Elena Rodríguez",
     phone: "+1 234 567 8902",
-    email: "maria.rodriguez@floralcraft.com",
+    email: "maria.rodriguez@FLOREVER.com",
     isActive: true,
     joinDate: "2023-03-20",
     completedOrders: 98,
@@ -51,7 +51,7 @@ const initialFlorists: Florist[] = [
     id: "3",
     fullName: "Ana Sofía Martínez",
     phone: "+1 234 567 8903",
-    email: "ana.martinez@floralcraft.com",
+    email: "ana.martinez@FLOREVER.com",
     isActive: false,
     joinDate: "2023-06-10",
     completedOrders: 45,
@@ -61,7 +61,7 @@ const initialFlorists: Florist[] = [
     id: "4",
     fullName: "Isabella Torres Vega",
     phone: "+1 234 567 8904",
-    email: "isabella.torres@floralcraft.com",
+    email: "isabella.torres@FLOREVER.com",
     isActive: true,
     joinDate: "2023-08-05",
     completedOrders: 67,
@@ -296,7 +296,7 @@ export function FloristManagement({ onNavigate }: FloristManagementProps) {
                         type="email"
                         value={formData.email}
                         onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
-                        placeholder="florista@floralcraft.com"
+                        placeholder="florista@FLOREVER.com"
                         required
                       />
                     </div>
