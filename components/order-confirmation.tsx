@@ -103,36 +103,53 @@ export function OrderConfirmation({ order, onNavigate }: OrderConfirmationProps)
                   Información de Entrega
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
+                <CardContent className="space-y-4">
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
+                  <h4 className="font-medium text-amber-800 mb-2">📍 Recogida en Florería</h4>
+                  <p className="text-sm text-amber-700 mb-3">
+                  Tu pedido estará disponible para recoger en nuestra florería ubicada en:
+                  </p>
+                  <div className="bg-white p-3 rounded border">
+                  <p className="font-medium text-slate-800">Florería "Pétalos y Fragancias"</p>
+                  <p className="text-sm text-slate-600">Av. Flores 123, Colonia Jardín</p>
+                  <p className="text-sm text-slate-600">Ciudad de México, CP 12345</p>
+                  <p className="text-sm text-slate-600">Tel: (55) 1234-5678</p>
+                  </div>
+                </div>
+                
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="delivery-name">Nombre completo</Label>
-                    <Input id="delivery-name" placeholder="María González" />
+                  <Label htmlFor="pickup-name">Nombre de quien recoge</Label>
+                  <Input id="pickup-name" placeholder="María González" />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="delivery-phone">Teléfono</Label>
-                    <Input id="delivery-phone" placeholder="+1 234 567 8900" />
+                  <Label htmlFor="pickup-phone">Teléfono de contacto</Label>
+                  <Input id="pickup-phone" placeholder="+52 55 1234 5678" />
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="delivery-address">Dirección de entrega</Label>
-                  <Textarea id="delivery-address" placeholder="Calle Principal 123, Colonia Centro, Ciudad" rows={3} />
-                </div>
+                
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="delivery-date">Fecha de entrega</Label>
-                    <Input id="delivery-date" type="date" />
+                  <Label htmlFor="pickup-date">Fecha de recogida</Label>
+                  <Input id="pickup-date" type="date" />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="delivery-time">Hora preferida</Label>
-                    <Input id="delivery-time" type="time" />
+                  <Label htmlFor="pickup-time">Hora preferida</Label>
+                  <Input id="pickup-time" type="time" />
                   </div>
                 </div>
+                
                 <div className="space-y-2">
-                  <Label htmlFor="delivery-notes">Notas especiales (opcional)</Label>
-                  <Textarea id="delivery-notes" placeholder="Instrucciones adicionales para la entrega..." rows={2} />
+                  <Label htmlFor="pickup-notes">Notas especiales (opcional)</Label>
+                  <Textarea id="pickup-notes" placeholder="Instrucciones adicionales para la recogida..." rows={2} />
                 </div>
-              </CardContent>
+                
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <p className="text-sm text-blue-800">
+                  <strong>Horario de atención:</strong> Lunes a Sábado 9:00 AM - 7:00 PM, Domingo 10:00 AM - 5:00 PM
+                  </p>
+                </div>
+                </CardContent>
             </Card>
           </div>
 
@@ -144,32 +161,23 @@ export function OrderConfirmation({ order, onNavigate }: OrderConfirmationProps)
                   <CreditCard className="w-5 h-5 mr-2 text-purple-600" />
                   Información de Pago
                 </CardTitle>
-                <CardDescription>Simulación de pago con tarjeta</CardDescription>
+                <CardDescription>Pago al momento de la recogida</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="card-number">Número de tarjeta</Label>
-                  <Input id="card-number" placeholder="1234 5678 9012 3456" defaultValue="4532 1234 5678 9012" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="card-name">Nombre en la tarjeta</Label>
-                  <Input id="card-name" placeholder="María González" defaultValue="María González" />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="card-expiry">Fecha de vencimiento</Label>
-                    <Input id="card-expiry" placeholder="MM/AA" defaultValue="12/28" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="card-cvv">CVV</Label>
-                    <Input id="card-cvv" placeholder="123" defaultValue="123" />
-                  </div>
-                </div>
-
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <p className="text-sm text-blue-800">
-                    <strong>Nota:</strong> Esta es una simulación. No se procesará ningún pago real.
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                  <h4 className="font-medium text-amber-800 mb-2">💳 Pago en Florería</h4>
+                  <p className="text-sm text-amber-700 mb-3">
+                    El pago se realizará de manera presencial al momento de recoger tu pedido en nuestra florería.
                   </p>
+                  <div className="bg-white p-3 rounded border">
+                    <p className="font-medium text-slate-800 mb-2">Métodos de pago aceptados:</p>
+                    <ul className="text-sm text-slate-600 space-y-1">
+                      <li>• Efectivo</li>
+                      <li>• Tarjeta de débito</li>
+                      <li>• Tarjeta de crédito</li>
+                      <li>• Transferencia bancaria</li>
+                    </ul>
+                  </div>
                 </div>
               </CardContent>
             </Card>
