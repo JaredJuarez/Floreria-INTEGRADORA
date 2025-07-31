@@ -50,6 +50,24 @@ export const apiService = {
     }
   },
 
+  // Verificar si el token es válido
+  validateToken: async (token: string) => {
+    try {
+      const response = await fetch(`${API_URL}/auth/validate`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        }
+      });
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error validating token:', error);
+      throw error;
+    }
+  },
+
   // Obtener tipos de categorías
   getCategoryTypes: async () => {
     try {

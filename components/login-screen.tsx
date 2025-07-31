@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Flower2, Mail, Lock, User, Phone } from "lucide-react"
 import type { UserType } from "@/app/page"
 import { apiService } from "@/lib/api"
+import { authUtils } from "@/lib/auth"
 
 interface LoginScreenProps {
   onLogin: (userType: UserType) => void
@@ -42,18 +43,24 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
   const [errorMessage, setErrorMessage] = useState("")
   const [successMessage, setSuccessMessage] = useState("")
 
-  // Mapear roles de la API a tipos de usuario de la aplicación
-  const mapRoleToUserType = (role: string): UserType => {
-    switch (role) {
-      case "ADMIN":
-        return "superadmin"
-      case "EMPLOYEE":
-        return "florist"
-      case "CUSTOMER":
-        return "client"
-      default:
-        return "client"
+  // Verificar si ya existe una sesión al cargar el componente
+  useEffect(() => {
+    const checkExistingSession = () => {
+      if (authUtils.hasValidSession()) {
+        const { role } = authUtils.getAuthData()
+        const userType = authUtils.mapRoleToUserType(role!)
+        if (userType) {
+          onLogin(userType)
+        }
+      }
     }
+
+    checkExistingSession()
+  }, [onLogin])
+
+  // Mapear roles de la API a tipos de usuario de la aplicación (mantener para compatibilidad)
+  const mapRoleToUserType = (role: string): UserType => {
+    return authUtils.mapRoleToUserType(role)
   }
 
   const handleLogin = async () => {
@@ -69,9 +76,8 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
       const response: LoginResponse = await apiService.login(email, password)
       
       if (!response.error && response.data) {
-        // Guardar token en localStorage si es necesario
-        localStorage.setItem('authToken', response.data.token)
-        localStorage.setItem('userRole', response.data.role)
+        // Guardar token y rol usando utilidades de autenticación
+        authUtils.saveAuthData(response.data.token, response.data.role)
         
         // Mapear el rol y hacer login
         const userType = mapRoleToUserType(response.data.role)
@@ -273,7 +279,7 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
               >
                 {loading ? "Creando cuenta..." : "Crear Cuenta"}
               </Button>
-                <Button
+              <Button
                 variant="ghost"
                 onClick={() => {
                   setShowRegister(false)
@@ -281,9 +287,9 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
                 }}
                 disabled={loading}
                 className="w-full text-slate-600 hover:text-slate-800"
-                >
-                Volver para iniciar sesión
-                </Button>
+              >
+                ¿Ya tienes cuenta? Inicia sesión
+              </Button>
             </div>
           </CardContent>
         </Card>
