@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { LoginScreen } from "@/components/login-screen"
 import { FloristDashboard } from "@/components/florist-dashboard"
 import { SuperAdminDashboard } from "@/components/superadmin-dashboard"
@@ -14,6 +14,7 @@ import { FloristManagement } from "@/components/florist-management"
 import { ClientProfile } from "@/components/client-profile"
 import { FloristProfile } from "@/components/florist-profile"
 import { OrderDetails } from "@/components/order-details"
+import { authUtils } from "@/lib/auth"
 
 export type UserType = "client" | "florist" | "superadmin" | null
 export type Screen =
@@ -35,6 +36,43 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState<UserType>(null)
   const [currentScreen, setCurrentScreen] = useState<Screen>("login")
   const [currentOrder, setCurrentOrder] = useState<any>(null)
+  const [isLoading, setIsLoading] = useState(true)
+
+  // Verificar si existe una sesión activa al cargar la aplicación
+  useEffect(() => {
+    const checkAuthStatus = () => {
+      try {
+        if (authUtils.hasValidSession()) {
+          const { role } = authUtils.getAuthData()
+          const userType = authUtils.mapRoleToUserType(role!)
+          
+          if (userType) {
+            setCurrentUser(userType)
+            // Establecer la pantalla inicial según el tipo de usuario
+            switch (userType) {
+              case "client":
+                setCurrentScreen("arrangement-builder")
+                break
+              case "florist":
+                setCurrentScreen("florist-dashboard")
+                break
+              case "superadmin":
+                setCurrentScreen("superadmin-dashboard")
+                break
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error checking auth status:', error)
+        // Si hay error, limpiar localStorage y mostrar login
+        authUtils.clearAuthData()
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    checkAuthStatus()
+  }, [])
 
   const handleLogin = (userType: UserType) => {
     setCurrentUser(userType)
@@ -52,6 +90,9 @@ export default function App() {
   }
 
   const handleLogout = () => {
+    // Limpiar localStorage al cerrar sesión
+    authUtils.clearAuthData()
+    
     setCurrentUser(null)
     setCurrentScreen("login")
     setCurrentOrder(null)
@@ -62,6 +103,22 @@ export default function App() {
   }
 
   const renderScreen = () => {
+    // Mostrar loading mientras verificamos el estado de autenticación
+    if (isLoading) {
+      return (
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="flex flex-col items-center space-y-4">
+            <div className="w-16 h-16 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center animate-pulse">
+              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707" />
+              </svg>
+            </div>
+            <p className="text-slate-600">Verificando sesión...</p>
+          </div>
+        </div>
+      )
+    }
+
     switch (currentScreen) {
       case "login":
         return <LoginScreen onLogin={handleLogin} />
