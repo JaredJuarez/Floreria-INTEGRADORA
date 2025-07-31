@@ -1,11 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Plus, Minus, ShoppingCart, Flower2, Filter, LogOut, User } from "lucide-react"
 import type { Screen, UserType } from "@/app/page"
+import { apiService } from "@/lib/api"
 
 interface ArrangementBuilderProps {
   onNavigate: (screen: Screen) => void
@@ -14,11 +15,36 @@ interface ArrangementBuilderProps {
   onLogout: () => void
 }
 
-const categories = [
-  { id: "bouquet", name: "Ramo", icon: "💐" },
-  { id: "centerpiece", name: "Centro de Mesa", icon: "🌸" },
-  { id: "wreath", name: "Corona", icon: "🌿" },
-  { id: "arrangement", name: "Arreglo", icon: "🌺" },
+// Interfaces para los datos de la API
+interface CategoryType {
+  id: string
+  name: string
+  icon: string
+}
+
+interface ArrangementType {
+  id: number
+  name: string
+  description: string
+  price: number
+  totalQuantityFlowers: number
+  typeCategory: string
+  isActive?: boolean
+}
+
+interface ApiResponse<T> {
+  message: string
+  data: T
+  error: boolean
+  status: string
+}
+
+// Datos de categorías con iconos por defecto (se actualizarán desde la API)
+const defaultCategories = [
+  { id: "Ramos", name: "Ramos", icon: "💐" },
+  { id: "Floreros", name: "Floreros", icon: "🌸" },
+  { id: "Coronas", name: "Coronas", icon: "🌿" },
+  { id: "Arreglos", name: "Arreglos", icon: "🌺" },
 ]
 
 const flowers = [
@@ -72,124 +98,68 @@ const flowers = [
   },
 ]
 
-const arrangementTypes = {
-  bouquet: [
-    {
-      id: "1",
-      name: "Ramo Clásico",
-      description: "Ramo tradicional perfecto para cualquier ocasión",
-      price: 35.0,
-      maxFlowers: 12,
-      isActive: true,
-    },
-    {
-      id: "2",
-      name: "Ramo Premium",
-      description: "Ramo elegante con flores de alta calidad",
-      price: 65.0,
-      maxFlowers: 18,
-      isActive: true,
-    },
-    {
-      id: "3",
-      name: "Ramo Deluxe",
-      description: "Ramo exclusivo con las mejores flores disponibles",
-      price: 95.0,
-      maxFlowers: 24,
-      isActive: true,
-    },
-  ],
-  centerpiece: [
-    {
-      id: "4",
-      name: "Centro Clásico",
-      description: "Centro de mesa tradicional para eventos",
-      price: 45.0,
-      maxFlowers: 15,
-      isActive: true,
-    },
-    {
-      id: "5",
-      name: "Centro Premium",
-      description: "Centro de mesa elegante para ocasiones especiales",
-      price: 75.0,
-      maxFlowers: 22,
-      isActive: true,
-    },
-    {
-      id: "6",
-      name: "Centro Deluxe",
-      description: "Centro de mesa exclusivo para eventos de lujo",
-      price: 120.0,
-      maxFlowers: 30,
-      isActive: true,
-    },
-  ],
-  wreath: [
-    {
-      id: "7",
-      name: "Corona Clásica",
-      description: "Corona tradicional para ceremonias",
-      price: 55.0,
-      maxFlowers: 20,
-      isActive: true,
-    },
-    {
-      id: "8",
-      name: "Corona Premium",
-      description: "Corona elegante con flores selectas",
-      price: 85.0,
-      maxFlowers: 28,
-      isActive: true,
-    },
-    {
-      id: "9",
-      name: "Corona Deluxe",
-      description: "Corona exclusiva para ocasiones especiales",
-      price: 130.0,
-      maxFlowers: 35,
-      isActive: true,
-    },
-  ],
-  arrangement: [
-    {
-      id: "10",
-      name: "Arreglo Clásico",
-      description: "Arreglo floral tradicional para decoración",
-      price: 40.0,
-      maxFlowers: 14,
-      isActive: true,
-    },
-    {
-      id: "11",
-      name: "Arreglo Premium",
-      description: "Arreglo floral elegante para espacios especiales",
-      price: 70.0,
-      maxFlowers: 20,
-      isActive: true,
-    },
-    {
-      id: "12",
-      name: "Arreglo Deluxe",
-      description: "Arreglo floral exclusivo para decoración de lujo",
-      price: 110.0,
-      maxFlowers: 26,
-      isActive: true,
-    },
-  ],
-}
-
 export function ArrangementBuilder({ onNavigate, onOrderCreate, currentUser, onLogout }: ArrangementBuilderProps) {
-  const [selectedCategory, setSelectedCategory] = useState("bouquet")
+  const [selectedCategory, setSelectedCategory] = useState("")
   const [selectedFlowers, setSelectedFlowers] = useState<{ [key: number]: number }>({})
   const [filterCategory, setFilterCategory] = useState("all")
-  const [selectedArrangementType, setSelectedArrangementType] = useState<any>(null)
+  const [selectedArrangementType, setSelectedArrangementType] = useState<ArrangementType | null>(null)
+  const [categories, setCategories] = useState<CategoryType[]>(defaultCategories)
+  const [arrangements, setArrangements] = useState<ArrangementType[]>([])
+  const [loading, setLoading] = useState(false)
+
+  // Cargar tipos de categorías al montar el componente
+  useEffect(() => {
+    const loadCategoryTypes = async () => {
+      try {
+        setLoading(true)
+        const response: ApiResponse<string[]> = await apiService.getCategoryTypes()
+        if (!response.error && response.data) {
+          const categoryTypesWithIcons = response.data.map((categoryName, index) => ({
+            id: categoryName,
+            name: categoryName,
+            icon: defaultCategories.find(cat => cat.name === categoryName)?.icon || "🌸"
+          }))
+          setCategories(categoryTypesWithIcons)
+        }
+      } catch (error) {
+        console.error('Error loading category types:', error)
+        // Usar categorías por defecto en caso de error
+        setCategories(defaultCategories)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadCategoryTypes()
+  }, [])
+
+  // Cargar arreglos cuando se selecciona una categoría
+  useEffect(() => {
+    const loadArrangements = async () => {
+      if (!selectedCategory) return
+
+      try {
+        setLoading(true)
+        const response: ApiResponse<ArrangementType[]> = await apiService.getArrangementsByCategory(selectedCategory)
+        if (!response.error && response.data) {
+          setArrangements(response.data)
+        }
+      } catch (error) {
+        console.error('Error loading arrangements:', error)
+        setArrangements([])
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadArrangements()
+  }, [selectedCategory])
 
   const addFlower = (flowerId: number) => {
     if (selectedArrangementType) {
       const currentTotal = getTotalFlowers()
-      if (currentTotal >= selectedArrangementType.maxFlowers) {
-        alert(`No puedes agregar más flores. Límite: ${selectedArrangementType.maxFlowers} flores`)
+      if (currentTotal >= selectedArrangementType.totalQuantityFlowers) {
+        alert(`No puedes agregar más flores. Límite: ${selectedArrangementType.totalQuantityFlowers} flores`)
         return
       }
     }
@@ -243,8 +213,6 @@ export function ArrangementBuilder({ onNavigate, onOrderCreate, currentUser, onL
   const filteredFlowers =
     filterCategory === "all" ? flowers : flowers.filter((flower) => flower.category === filterCategory)
 
-  const currentArrangementTypes = arrangementTypes[selectedCategory as keyof typeof arrangementTypes] || []
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-rose-50">
       {/* Header */}
@@ -292,58 +260,76 @@ export function ArrangementBuilder({ onNavigate, onOrderCreate, currentUser, onL
                 <CardDescription>Selecciona el estilo que deseas crear</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {categories.map((category) => (
-                    <button
-                      key={category.id}
-                      onClick={() => handleCategoryChange(category.id)}
-                      className={`p-4 rounded-lg border-2 transition-all text-center ${
-                        selectedCategory === category.id
-                          ? "border-green-500 bg-green-50"
-                          : "border-slate-200 hover:border-green-300 hover:bg-green-50/50"
-                      }`}
-                    >
-                      <div className="text-2xl mb-2">{category.icon}</div>
-                      <div className="font-medium text-slate-800">{category.name}</div>
-                    </button>
-                  ))}
-                </div>
+                {loading ? (
+                  <div className="flex justify-center items-center py-8">
+                    <div className="text-slate-500">Cargando categorías...</div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {categories.map((category) => (
+                      <button
+                        key={category.id}
+                        onClick={() => handleCategoryChange(category.id)}
+                        className={`p-4 rounded-lg border-2 transition-all text-center ${
+                          selectedCategory === category.id
+                            ? "border-green-500 bg-green-50"
+                            : "border-slate-200 hover:border-green-300 hover:bg-green-50/50"
+                        }`}
+                      >
+                        <div className="text-2xl mb-2">{category.icon}</div>
+                        <div className="font-medium text-slate-800">{category.name}</div>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
 
             {/* Arrangement Type Selection */}
-            <Card className="shadow-sm border-slate-200">
-              <CardHeader>
-                <CardTitle className="text-slate-800">
-                  Tipo de {categories.find((c) => c.id === selectedCategory)?.name}
-                </CardTitle>
-                <CardDescription>Selecciona el tipo específico que deseas crear</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {currentArrangementTypes
-                    .filter((at) => at.isActive)
-                    .map((arrangementType) => (
-                      <button
-                        key={arrangementType.id}
-                        onClick={() => setSelectedArrangementType(arrangementType)}
-                        className={`p-4 rounded-lg border-2 transition-all text-left ${
-                          selectedArrangementType?.id === arrangementType.id
-                            ? "border-rose-500 bg-rose-50"
-                            : "border-slate-200 hover:border-rose-300 hover:bg-rose-50/50"
-                        }`}
-                      >
-                        <h3 className="font-semibold text-slate-800 mb-2">{arrangementType.name}</h3>
-                        <p className="text-sm text-slate-600 mb-3">{arrangementType.description}</p>
-                        <div className="flex justify-between items-center">
-                          <span className="text-lg font-bold text-rose-600">${arrangementType.price.toFixed(2)}</span>
-                          <span className="text-sm text-slate-500">Máx. {arrangementType.maxFlowers} flores</span>
-                        </div>
-                      </button>
-                    ))}
-                </div>
-              </CardContent>
-            </Card>
+            {selectedCategory && (
+              <Card className="shadow-sm border-slate-200">
+                <CardHeader>
+                  <CardTitle className="text-slate-800">
+                    Tipo de {categories.find((c) => c.id === selectedCategory)?.name}
+                  </CardTitle>
+                  <CardDescription>Selecciona el tipo específico que deseas crear</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {loading ? (
+                    <div className="flex justify-center items-center py-8">
+                      <div className="text-slate-500">Cargando arreglos...</div>
+                    </div>
+                  ) : arrangements.length === 0 ? (
+                    <div className="flex justify-center items-center py-8">
+                      <div className="text-slate-500">No hay arreglos disponibles para esta categoría</div>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {arrangements
+                        .filter((at) => at.isActive !== false)
+                        .map((arrangementType) => (
+                          <button
+                            key={arrangementType.id}
+                            onClick={() => setSelectedArrangementType(arrangementType)}
+                            className={`p-4 rounded-lg border-2 transition-all text-left ${
+                              selectedArrangementType?.id === arrangementType.id
+                                ? "border-rose-500 bg-rose-50"
+                                : "border-slate-200 hover:border-rose-300 hover:bg-rose-50/50"
+                            }`}
+                          >
+                            <h3 className="font-semibold text-slate-800 mb-2">{arrangementType.name}</h3>
+                            <p className="text-sm text-slate-600 mb-3">{arrangementType.description}</p>
+                            <div className="flex justify-between items-center">
+                              <span className="text-lg font-bold text-rose-600">${arrangementType.price.toFixed(2)}</span>
+                              <span className="text-sm text-slate-500">Máx. {arrangementType.totalQuantityFlowers} flores</span>
+                            </div>
+                          </button>
+                        ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
 
             {/* Flower Selection */}
             {selectedArrangementType && (
@@ -360,6 +346,7 @@ export function ArrangementBuilder({ onNavigate, onOrderCreate, currentUser, onL
                         value={filterCategory}
                         onChange={(e) => setFilterCategory(e.target.value)}
                         className="border border-slate-200 rounded-md px-3 py-1 text-sm"
+                        title="Filtrar por categoría de flores"
                       >
                         <option value="all">Todas</option>
                         <option value="roses">Rosas</option>
@@ -455,7 +442,7 @@ export function ArrangementBuilder({ onNavigate, onOrderCreate, currentUser, onL
                     <div className="flex justify-between text-sm mt-1">
                       <span>Flores usadas:</span>
                       <span className="font-semibold">
-                        {getTotalFlowers()}/{selectedArrangementType.maxFlowers}
+                        {getTotalFlowers()}/{selectedArrangementType.totalQuantityFlowers}
                       </span>
                     </div>
                   </div>
