@@ -273,7 +273,7 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
               >
                 {loading ? "Creando cuenta..." : "Crear Cuenta"}
               </Button>
-              <Button
+                <Button
                 variant="ghost"
                 onClick={() => {
                   setShowRegister(false)
@@ -281,9 +281,9 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
                 }}
                 disabled={loading}
                 className="w-full text-slate-600 hover:text-slate-800"
-              >
-                ¿Ya tienes cuenta? Inicia sesión
-              </Button>
+                >
+                Volver para iniciar sesión
+                </Button>
             </div>
           </CardContent>
         </Card>
