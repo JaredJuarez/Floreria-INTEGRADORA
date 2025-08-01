@@ -228,10 +228,6 @@ export function FloristDashboard({ onNavigate, onLogout }: FloristDashboardProps
               </div>
             </div>
             <div className="flex items-center space-x-3">
-              <Button variant="ghost" size="sm" className="text-slate-600 hover:text-slate-800">
-                <User className="w-4 h-4 mr-2" />
-                Mi Perfil
-              </Button>
               <Button variant="ghost" size="sm" onClick={onLogout} className="text-slate-600 hover:text-slate-800">
                 <LogOut className="w-4 h-4 mr-2" />
                 Salir
@@ -567,13 +563,6 @@ export function FloristDashboard({ onNavigate, onLogout }: FloristDashboardProps
                   >
                     <Package className="w-4 h-4 mr-2" />
                     Actualizar Pedidos
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start border-gray-200 hover:bg-gray-50 bg-transparent mt-2"
-                  >
-                    <User className="w-4 h-4 mr-2" />
-                    Editar Perfil
                   </Button>
                 </div>
               </CardContent>

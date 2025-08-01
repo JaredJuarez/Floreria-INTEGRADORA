@@ -88,19 +88,13 @@ export function OrderHistory({ onNavigate }: OrderHistoryProps) {
           icon: Clock,
           className: "bg-yellow-100 text-yellow-800",
         };
-      case "COMPLETED":
+      case "CLOSED":
         return {
           label: "Completado",
           icon: CheckCircle,
           className: "bg-green-100 text-green-800",
         };
-      case "CANCELLED":
-        return {
-          label: "Cancelado",
-          icon: XCircle,
-          className: "bg-red-100 text-red-800",
-        };
-      case "IN_PROGRESS":
+      case "PROCESSING":
         return {
           label: "En Proceso",
           icon: AlertCircle,
