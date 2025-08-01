@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Plus, Minus, ShoppingCart, Flower2, Filter, LogOut, User, Clock, History } from "lucide-react"
 import type { Screen, UserType } from "@/app/page"
 import { apiService } from "@/lib/api"
+import Swal from "sweetalert2"
 
 interface ArrangementBuilderProps {
   onNavigate: (screen: Screen) => void
@@ -144,14 +145,14 @@ export function ArrangementBuilder({ onNavigate, onOrderCreate, currentUser, onL
     if (selectedArrangementType) {
       const currentTotal = getTotalFlowers()
       if (currentTotal >= selectedArrangementType.totalQuantityFlowers) {
-        alert(`No puedes agregar más flores. Límite: ${selectedArrangementType.totalQuantityFlowers} flores`)
+        Swal.fire("Límite alcanzado", `No puedes agregar más flores. Límite: ${selectedArrangementType.totalQuantityFlowers} flores`, "warning")
         return
       }
     }
 
     const currentFlowerCount = selectedFlowers[flowerId] || 0
     if (currentFlowerCount >= flower.amount) {
-      alert(`No hay más stock disponible de ${flower.name}. Stock disponible: ${flower.amount}`)
+      Swal.fire("Stock insuficiente", `No hay más stock disponible de ${flower.name}. Stock disponible: ${flower.amount}`, "warning")
       return
     }
 
@@ -233,11 +234,11 @@ export function ArrangementBuilder({ onNavigate, onOrderCreate, currentUser, onL
         onOrderCreate(order)
         onNavigate("order-confirmation")
       } else {
-        alert(`Error al crear el pedido: ${response.message}`)
+        Swal.fire("Error", `Error al crear el pedido: ${response.message}`, "error")
       }
     } catch (error) {
       console.error('Error creating order:', error)
-      alert('Error de conexión al crear el pedido')
+      Swal.fire("Error de conexión", "Error de conexión al crear el pedido", "error")
     }
   }
 

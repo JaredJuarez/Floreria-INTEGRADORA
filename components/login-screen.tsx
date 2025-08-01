@@ -9,6 +9,7 @@ import { Flower2, Mail, Lock, User, Phone } from "lucide-react"
 import type { UserType } from "@/app/page"
 import { apiService } from "@/lib/api"
 import { authUtils } from "@/lib/auth"
+import Swal from "sweetalert2"
 
 interface LoginScreenProps {
   onLogin: (userType: UserType) => void
@@ -151,7 +152,7 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
 
   const handlePasswordReset = () => {
     // Placeholder para reset de contraseña si se necesita en el futuro
-    alert("Funcionalidad de reset de contraseña no disponible")
+    Swal.fire("Función no disponible", "Funcionalidad de reset de contraseña no disponible", "info")
   }
 
   if (showRegister) {

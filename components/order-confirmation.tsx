@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { CheckCircle, ArrowLeft, CreditCard, MapPin, Calendar } from "lucide-react"
 import type { Screen } from "@/app/page"
+import Swal from "sweetalert2"
 
 interface OrderConfirmationProps {
   order: any
@@ -14,7 +15,7 @@ interface OrderConfirmationProps {
 export function OrderConfirmation({ order, onNavigate }: OrderConfirmationProps) {
   const handlePayment = () => {
     // Simulación de pago
-    alert("¡Pago procesado exitosamente! Tu pedido ha sido confirmado.")
+    Swal.fire("¡Éxito!", "¡Pago procesado exitosamente! Tu pedido ha sido confirmado.", "success")
     onNavigate("arrangement-builder")
   }
 
