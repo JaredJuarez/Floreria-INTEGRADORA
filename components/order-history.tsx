@@ -373,23 +373,16 @@ export function OrderHistory({ onNavigate }: OrderHistoryProps) {
                       
                       <div className="text-center p-3 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg">
                         <p className="text-2xl font-bold text-blue-600">
-                          {orders.filter(order => order.status === "IN_PROGRESS").length}
+                          {orders.filter(order => order.status === "PROCESSING").length}
                         </p>
                         <p className="text-xs text-blue-700 font-medium">En proceso</p>
                       </div>
                       
                       <div className="text-center p-3 bg-gradient-to-br from-emerald-50 to-green-100 rounded-lg">
                         <p className="text-2xl font-bold text-emerald-600">
-                          {orders.filter(order => order.status === "COMPLETED").length}
+                          {orders.filter(order => order.status === "CLOSED").length}
                         </p>
                         <p className="text-xs text-emerald-700 font-medium">Completados</p>
-                      </div>
-                      
-                      <div className="text-center p-3 bg-gradient-to-br from-red-50 to-red-100 rounded-lg">
-                        <p className="text-2xl font-bold text-red-600">
-                          {orders.filter(order => order.status === "CANCELLED").length}
-                        </p>
-                        <p className="text-xs text-red-700 font-medium">Cancelados</p>
                       </div>
                     </div>
 

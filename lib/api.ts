@@ -1,5 +1,11 @@
 import { API_URL } from "../url.js";
 
+// Función helper para obtener el token de manera segura
+const getAuthToken = (): string | null => {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem('authToken') || localStorage.getItem('token');
+};
+
 // Funciones para llamadas a la API
 export const apiService = {
   // Autenticación
@@ -107,9 +113,7 @@ export const apiService = {
   // Crear orden
   createOrder: async (orderData: { category: number; flowers: { cuantity: number; flowerId: number }[] }) => {
     try {
-      const { token } = typeof window !== 'undefined' ? {
-        token: localStorage.getItem('authToken')
-      } : { token: null };
+      const token = getAuthToken();
 
       const response = await fetch(`${API_URL}/order`, {
         method: 'POST',
@@ -130,9 +134,7 @@ export const apiService = {
   // Gestión de Floristas
   getFlorists: async () => {
     try {
-      const { token } = typeof window !== 'undefined' ? {
-        token: localStorage.getItem('authToken')
-      } : { token: null };
+      const token = getAuthToken();
 
       const response = await fetch(`${API_URL}/floristas`, {
         method: 'GET',
@@ -151,9 +153,7 @@ export const apiService = {
 
   createFlorist: async (floristData: { name: string; phone: string; email: string; password: string }) => {
     try {
-      const { token } = typeof window !== 'undefined' ? {
-        token: localStorage.getItem('authToken')
-      } : { token: null };
+      const token = getAuthToken();
 
       const response = await fetch(`${API_URL}/floristas`, {
         method: 'POST',
@@ -173,9 +173,7 @@ export const apiService = {
 
   updateFlorist: async (floristData: { id: string; name: string; phone: string; email: string; password?: string }) => {
     try {
-      const { token } = typeof window !== 'undefined' ? {
-        token: localStorage.getItem('authToken')
-      } : { token: null };
+      const token = getAuthToken();
 
       const response = await fetch(`${API_URL}/floristas`, {
         method: 'PUT',
@@ -195,9 +193,7 @@ export const apiService = {
 
   toggleFloristStatus: async (id: string, status: boolean) => {
     try {
-      const { token } = typeof window !== 'undefined' ? {
-        token: localStorage.getItem('authToken')
-      } : { token: null };
+      const token = getAuthToken();
 
       const response = await fetch(`${API_URL}/floristas/${id}/status?status=${status}`, {
         method: 'PATCH',
@@ -257,9 +253,7 @@ export const apiService = {
   // Historial de pedidos del usuario
   getUserOrderHistory: async () => {
     try {
-      const { token } = typeof window !== 'undefined' ? {
-        token: localStorage.getItem('authToken')
-      } : { token: null };
+      const token = getAuthToken();
 
       const response = await fetch(`${API_URL}/order/user/history`, {
         method: 'GET',
@@ -295,6 +289,206 @@ export const apiService = {
       return data;
     } catch (error) {
       console.error('Error fetching user order history:', error);
+      return {
+        error: true,
+        message: 'Error de conexión al servidor',
+        status: 'CONNECTION_ERROR'
+      };
+    }
+  },
+
+  // Obtener órdenes por estado (para floristas)
+  getOrdersByStatus: async (status: 'OPEN' | 'PROCESSING' | 'CLOSED') => {
+    try {
+      const token = getAuthToken();
+      if (!token) {
+        return {
+          error: true,
+          message: 'No hay token de autenticación',
+          status: 'UNAUTHORIZED'
+        };
+      }
+
+      const response = await fetch(`${API_URL}/order/status/${status}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          return {
+            error: true,
+            message: 'Tu sesión ha expirado, por favor inicia sesión nuevamente',
+            status: 'UNAUTHORIZED'
+          };
+        } else {
+          return {
+            error: true,
+            message: `Error del servidor: ${response.status}`,
+            status: 'ERROR'
+          };
+        }
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error fetching orders by status:', error);
+      return {
+        error: true,
+        message: 'Error de conexión al servidor',
+        status: 'CONNECTION_ERROR'
+      };
+    }
+  },
+
+  // Obtener una orden específica por ID
+  getOrderById: async (id: number) => {
+    try {
+      const token = getAuthToken();
+      if (!token) {
+        return {
+          error: true,
+          message: 'No hay token de autenticación',
+          status: 'UNAUTHORIZED'
+        };
+      }
+
+      const response = await fetch(`${API_URL}/order/${id}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          return {
+            error: true,
+            message: 'Tu sesión ha expirado, por favor inicia sesión nuevamente',
+            status: 'UNAUTHORIZED'
+          };
+        } else {
+          return {
+            error: true,
+            message: `Error del servidor: ${response.status}`,
+            status: 'ERROR'
+          };
+        }
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error fetching order by ID:', error);
+      return {
+        error: true,
+        message: 'Error de conexión al servidor',
+        status: 'CONNECTION_ERROR'
+      };
+    }
+  },
+
+  // Asignar orden al florista
+  assignOrder: async (id: number) => {
+    try {
+      const token = getAuthToken();
+      if (!token) {
+        return {
+          error: true,
+          message: 'No hay token de autenticación',
+          status: 'UNAUTHORIZED'
+        };
+      }
+
+      const response = await fetch(`${API_URL}/order/assign/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          return {
+            error: true,
+            message: 'Tu sesión ha expirado, por favor inicia sesión nuevamente',
+            status: 'UNAUTHORIZED'
+          };
+        } else {
+          return {
+            error: true,
+            message: `Error del servidor: ${response.status}`,
+            status: 'ERROR'
+          };
+        }
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error assigning order:', error);
+      return {
+        error: true,
+        message: 'Error de conexión al servidor',
+        status: 'CONNECTION_ERROR'
+      };
+    }
+  },
+
+  // Cerrar orden
+  closeOrder: async (id: number) => {
+    try {
+      const token = getAuthToken();
+      if (!token) {
+        return {
+          error: true,
+          message: 'No hay token de autenticación',
+          status: 'UNAUTHORIZED'
+        };
+      }
+
+      const response = await fetch(`${API_URL}/order/closed/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          return {
+            error: true,
+            message: 'Tu sesión ha expirado, por favor inicia sesión nuevamente',
+            status: 'UNAUTHORIZED'
+          };
+        } else {
+          return {
+            error: true,
+            message: `Error del servidor: ${response.status}`,
+            status: 'ERROR'
+          };
+        }
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error closing order:', error);
       return {
         error: true,
         message: 'Error de conexión al servidor',
