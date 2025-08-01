@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, Plus, Edit, Trash2, Flower2 } from "lucide-react"
 import type { Screen } from "@/app/page"
+import Swal from "sweetalert2"
 
 interface BouquetManagementProps {
   onNavigate: (screen: Screen) => void
@@ -95,9 +96,21 @@ export function BouquetManagement({ onNavigate }: BouquetManagementProps) {
     setIsCreating(true)
   }
 
-  const handleDelete = (id: string) => {
-    if (confirm("¿Estás seguro de que quieres eliminar este tipo de ramo?")) {
+  const handleDelete = async (id: string) => {
+    const result = await Swal.fire({
+      title: "¿Estás seguro?",
+      text: "¿Estás seguro de que quieres eliminar este tipo de ramo?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar"
+    })
+
+    if (result.isConfirmed) {
       setBouquetTypes((prev) => prev.filter((b) => b.id !== id))
+      Swal.fire("Eliminado", "El tipo de ramo ha sido eliminado", "success")
     }
   }
 

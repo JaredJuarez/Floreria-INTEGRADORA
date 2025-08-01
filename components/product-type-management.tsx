@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, Plus, Edit, Trash2, Package } from "lucide-react"
 import type { Screen } from "@/app/page"
+import Swal from "sweetalert2"
 
 interface ProductTypeManagementProps {
   onNavigate: (screen: Screen) => void
@@ -95,9 +96,21 @@ export function ProductTypeManagement({ onNavigate }: ProductTypeManagementProps
     setIsCreating(true)
   }
 
-  const handleDelete = (id: string) => {
-    if (confirm("¿Estás seguro de que quieres eliminar este tipo de producto?")) {
+  const handleDelete = async (id: string) => {
+    const result = await Swal.fire({
+      title: "¿Estás seguro?",
+      text: "¿Estás seguro de que quieres eliminar este tipo de producto?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar"
+    })
+
+    if (result.isConfirmed) {
       setProductTypes((prev) => prev.filter((pt) => pt.id !== id))
+      Swal.fire("Eliminado", "El tipo de producto ha sido eliminado", "success")
     }
   }
 

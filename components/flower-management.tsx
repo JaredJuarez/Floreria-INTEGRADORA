@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, Plus, Edit, Trash2, Flower2 } from "lucide-react"
 import type { Screen } from "@/app/page"
+import Swal from "sweetalert2"
 
 interface FlowerManagementProps {
   onNavigate: (screen: Screen) => void
@@ -58,9 +59,21 @@ export function FlowerManagement({ onNavigate }: FlowerManagementProps) {
     setIsCreating(true)
   }
 
-  const handleDelete = (id: string) => {
-    if (confirm("¿Eliminar esta flor?")) {
+  const handleDelete = async (id: string) => {
+    const result = await Swal.fire({
+      title: "¿Estás seguro?",
+      text: "¿Eliminar esta flor?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar"
+    })
+
+    if (result.isConfirmed) {
       setFlowers((prev) => prev.filter((f) => f.id !== id))
+      Swal.fire("Eliminado", "La flor ha sido eliminada", "success")
     }
   }
 

@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ArrowLeft, Plus, Edit, Trash2, Grid3X3 } from "lucide-react"
 import type { Screen } from "@/app/page"
+import Swal from "sweetalert2"
 
 interface CategoryManagementProps {
   onNavigate: (screen: Screen) => void
@@ -143,9 +144,21 @@ export function CategoryManagement({ onNavigate }: CategoryManagementProps) {
     setIsCreating(true)
   }
 
-  const handleDelete = (id: string) => {
-    if (confirm("¿Estás seguro de que quieres eliminar esta categoría?")) {
+  const handleDelete = async (id: string) => {
+    const result = await Swal.fire({
+      title: "¿Estás seguro?",
+      text: "¿Estás seguro de que quieres eliminar esta categoría?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar"
+    })
+
+    if (result.isConfirmed) {
       setCategories((prev) => prev.filter((c) => c.id !== id))
+      Swal.fire("Eliminado", "La categoría ha sido eliminada", "success")
     }
   }
 

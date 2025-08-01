@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ArrowLeft, Plus, Edit, Trash2, Flower2 } from "lucide-react"
 import type { Screen } from "@/app/page"
+import Swal from "sweetalert2"
 
 interface ArrangementManagementProps {
   onNavigate: (screen: Screen) => void
@@ -196,9 +197,21 @@ export function ArrangementManagement({ onNavigate }: ArrangementManagementProps
     setIsCreating(true)
   }
 
-  const handleDelete = (id: string) => {
-    if (confirm("¿Estás seguro de que quieres eliminar este tipo de arreglo?")) {
+  const handleDelete = async (id: string) => {
+    const result = await Swal.fire({
+      title: "¿Estás seguro?",
+      text: "¿Estás seguro de que quieres eliminar este tipo de arreglo?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar"
+    })
+
+    if (result.isConfirmed) {
       setArrangementTypes((prev) => prev.filter((a) => a.id !== id))
+      Swal.fire("Eliminado", "El tipo de arreglo ha sido eliminado", "success")
     }
   }
 
