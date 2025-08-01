@@ -1,134 +1,290 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, Plus, Edit, Trash2, Users, Phone, Mail, User } from "lucide-react"
-import type { Screen } from "@/app/page"
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import {
+  ArrowLeft,
+  Plus,
+  Edit,
+  Users,
+  Phone,
+  Mail,
+  User,
+  Lock,
+  Unlock,
+} from "lucide-react";
+import type { Screen } from "@/app/page";
+
+import { useEffect } from "react";
+import axios from "axios";
+import Swal from "sweetalert2";
+import { set } from "date-fns";
 
 interface FloristManagementProps {
-  onNavigate: (screen: Screen) => void
+  onNavigate: (screen: Screen) => void;
 }
 
 interface Florist {
-  id: string
-  fullName: string
-  phone: string
-  email: string
-  isActive: boolean
-  joinDate: string
-  completedOrders: number
-  rating: number
+  id: string;
+  name: string;
+  phone: string;
+  email: string;
+  status: boolean;
+  completedOrders: number;
 }
 
-const initialFlorists: Florist[] = [
-  {
-    id: "1",
-    fullName: "Carmen López García",
-    phone: "+1 234 567 8901",
-    email: "carmen.lopez@FLOREVER.com",
-    isActive: true,
-    joinDate: "2023-01-15",
-    completedOrders: 156,
-    rating: 4.8,
-  },
-  {
-    id: "2",
-    fullName: "María Elena Rodríguez",
-    phone: "+1 234 567 8902",
-    email: "maria.rodriguez@FLOREVER.com",
-    isActive: true,
-    joinDate: "2023-03-20",
-    completedOrders: 98,
-    rating: 4.6,
-  },
-  {
-    id: "3",
-    fullName: "Ana Sofía Martínez",
-    phone: "+1 234 567 8903",
-    email: "ana.martinez@FLOREVER.com",
-    isActive: false,
-    joinDate: "2023-06-10",
-    completedOrders: 45,
-    rating: 4.3,
-  },
-  {
-    id: "4",
-    fullName: "Isabella Torres Vega",
-    phone: "+1 234 567 8904",
-    email: "isabella.torres@FLOREVER.com",
-    isActive: true,
-    joinDate: "2023-08-05",
-    completedOrders: 67,
-    rating: 4.7,
-  },
-]
+interface FormData {
+  name: string;
+  phone: string;
+  email: string;
+  password: string;
+}
+
+interface FormErrors {
+  name?: string;
+  phone?: string;
+  email?: string;
+  password?: string;
+}
 
 export function FloristManagement({ onNavigate }: FloristManagementProps) {
-  const [florists, setFlorists] = useState<Florist[]>(initialFlorists)
-  const [isCreating, setIsCreating] = useState(false)
-  const [editingId, setEditingId] = useState<string | null>(null)
+  const [florists, setFlorists] = useState<Florist[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [isCreating, setIsCreating] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
-    fullName: "",
+    name: "",
     phone: "",
     email: "",
-  })
+    password: "",
+  });
+  const [formErrors, setFormErrors] = useState<FormErrors>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
+  useEffect(() => {
+    const fetchFlorists = async () => {
+      try {
+        const token = localStorage.getItem("authToken");
+        const response = await axios.get(
+          "http://localhost:8080/api/floristas",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        console.log("Florists response.data:", response.data);
+        setFlorists(response.data.data);
+      } catch (err) {
+        console.error("Error fetching florists:", err);
+        setError("No se pudieron cargar los floristas 🥲");
+        Swal.fire("Error", "No se pudieron cargar los floristas 🥲", "error");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchFlorists();
+  }, []);
 
-    const newFlorist: Florist = {
-      id: editingId || Date.now().toString(),
-      fullName: formData.fullName,
-      phone: formData.phone,
-      email: formData.email,
-      isActive: true,
-      joinDate: new Date().toISOString().split("T")[0],
-      completedOrders: 0,
-      rating: 0,
-    }
-
-    if (editingId) {
-      setFlorists((prev) =>
-        prev.map((f) => (f.id === editingId ? { ...prev.find((p) => p.id === editingId)!, ...newFlorist } : f)),
-      )
-    } else {
-      setFlorists((prev) => [...prev, newFlorist])
-    }
-
-    resetForm()
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <p className="text-gray-500 text-lg">Cargando floristas...</p>
+      </div>
+    );
   }
 
-  const handleEdit = (florist: Florist) => {
-    setEditingId(florist.id)
+  if (error) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <p className="text-red-600 text-lg font-semibold">{error}</p>
+      </div>
+    );
+  }
+
+  const validate = (data: FormData) => {
+    const errors: FormErrors = {};
+
+    if (!data.name.trim()) {
+      errors.name = "El nombre no puede estar vacío o solo espacios";
+    }
+
+    // Teléfono: solo números, + y espacios permitidos, pero debe tener mínimo 7 dígitos
+    const phoneRegex = /^[\d+\s]{7,}$/;
+    if (!phoneRegex.test(data.phone)) {
+      errors.phone = "Ingresa un teléfono válido (solo números, + y espacios)";
+    }
+    // Email básico
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(data.email)) {
+      errors.email = "Correo electrónico inválido";
+    }
+
+    // Contraseña: mínimo 6 caracteres, pero solo si estás creando o editando con password
+    if (!editingId && data.password.length < 6) {
+      errors.password = "La contraseña debe tener al menos 6 caracteres";
+    } else if (
+      editingId &&
+      data.password &&
+      data.password.length > 0 &&
+      data.password.length < 6
+    ) {
+      errors.password = "La contraseña debe tener al menos 6 caracteres";
+    }
+
+    return errors;
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData((prev) => ({
+      ...prev,
+      [e.target.id]: e.target.value,
+    }));
+  };
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const token = localStorage.getItem("authToken");
+    const error = validate(formData);
+    setFormErrors(error);
+    if (Object.keys(error).length > 0) {
+      Swal.fire(
+        "Error",
+        "Por favor corrige los errores del formulario",
+        "error"
+      );
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      await axios.post(
+        "http://localhost:8080/api/floristas",
+        {
+          name: formData.name,
+          phone: formData.phone,
+          email: formData.email,
+          password: formData.password,
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      const updated = await axios.get("http://localhost:8080/api/floristas", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setFlorists(updated.data.data);
+      resetForm();
+      Swal.fire("Éxito", "Florista creado correctamente 🌸", "success");
+    } catch (error) {
+      console.error("Error al crear florista:", error);
+      Swal.fire("Error", "No se pudo crear el florista 😢", "error");
+    }
+  };
+
+  const handleEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const token = localStorage.getItem("authToken");
+
+    try {
+      const floristToUpdate = florists.find((f) => f.id === editingId);
+      if (!floristToUpdate) throw new Error("Florista no encontrado");
+
+      const floristPayload: any = {
+        id: floristToUpdate.id,
+        name: formData.name,
+        phone: formData.phone,
+        email: formData.email,
+      };
+
+      if (formData.password.trim() !== "") {
+        floristPayload.password = formData.password;
+      }
+
+      await axios.put("http://localhost:8080/api/floristas", floristPayload, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      setFlorists((prev) =>
+        prev.map((f) => (f.id === editingId ? { ...f, ...floristPayload } : f))
+      );
+      resetForm();
+      Swal.fire(
+        "Actualizado",
+        "Florista actualizado exitosamente ✅",
+        "success"
+      );
+    } catch (error) {
+      console.error("Error al actualizar florista:", error);
+      Swal.fire("Error", "No se pudo actualizar el florista 😢", "error");
+    }
+  };
+
+  const openEditForm = (floristId: string) => {
+    const florist = florists.find((f) => f.id === floristId);
+    if (!florist) return;
+
+    setEditingId(florist.id);
     setFormData({
-      fullName: florist.fullName,
+      name: florist.name,
       phone: florist.phone,
       email: florist.email,
-    })
-    setIsCreating(true)
-  }
+      password: "", // No mostrar la contraseña por seguridad
+    });
+    setIsCreating(true);
+  };
 
-  const handleDelete = (id: string) => {
-    if (confirm("¿Estás seguro de que quieres eliminar este florista?")) {
-      setFlorists((prev) => prev.filter((f) => f.id !== id))
+  const toggleActive = async (id: string, currentStatus: boolean) => {
+    const token = localStorage.getItem("authToken");
+    if (!token) {
+      Swal.fire("Error", "No estás autenticado", "error");
+      return;
     }
-  }
 
-  const toggleActive = (id: string) => {
-    setFlorists((prev) => prev.map((f) => (f.id === id ? { ...f, isActive: !f.isActive } : f)))
-  }
+    try {
+      await axios.patch(
+        `http://localhost:8080/api/floristas/${id}/status?status=${!currentStatus}`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setFlorists((prev) =>
+        prev.map((f) => (f.id === id ? { ...f, status: !currentStatus } : f))
+      );
+      Swal.fire(
+        "Éxito",
+        `Florista ${!currentStatus ? "activado" : "desactivado"} correctamente`,
+        "success"
+      );
+    } catch (error: any) {
+      console.error(
+        "Error al cambiar el estado:",
+        error.response?.data || error.message
+      );
+      Swal.fire(
+        "Error",
+        "No se pudo cambiar el estado del florista, intenta de nuevo",
+        "error"
+      );
+    }
+  };
 
   const resetForm = () => {
-    setFormData({ fullName: "", phone: "", email: "" })
-    setIsCreating(false)
-    setEditingId(null)
-  }
+    setFormData({ name: "", phone: "", email: "", password: "" });
+    setIsCreating(false);
+    setEditingId(null);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-rose-50">
@@ -147,8 +303,12 @@ export function FloristManagement({ onNavigate }: FloristManagementProps) {
                 Volver
               </Button>
               <div>
-                <h1 className="text-xl font-serif font-semibold text-slate-800">Gestión de Floristas</h1>
-                <p className="text-sm text-slate-600">Administra los floristas y sus datos de contacto</p>
+                <h1 className="text-xl font-serif font-semibold text-slate-800">
+                  Gestión de Floristas
+                </h1>
+                <p className="text-sm text-slate-600">
+                  Administra los floristas y sus datos de contacto
+                </p>
               </div>
             </div>
             <Button
@@ -172,32 +332,42 @@ export function FloristManagement({ onNavigate }: FloristManagementProps) {
                   <Users className="w-5 h-5 mr-2 text-purple-600" />
                   Lista de Floristas ({florists.length})
                 </CardTitle>
-                <CardDescription>Todos los floristas registrados en el sistema</CardDescription>
+                <CardDescription>
+                  Todos los floristas registrados en el sistema
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   {florists.map((florist) => (
-                    <div key={florist.id} className="p-4 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
+                    <div
+                      key={florist.id}
+                      className="p-4 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors"
+                    >
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center space-x-3">
                           <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-indigo-500 rounded-full flex items-center justify-center">
                             <User className="w-5 h-5 text-white" />
                           </div>
                           <div>
-                            <h3 className="font-semibold text-slate-800">{florist.fullName}</h3>
-                            <p className="text-sm text-slate-600">Miembro desde {florist.joinDate}</p>
+                            <h3 className="font-semibold text-slate-800">
+                              {florist.name}
+                            </h3>
                           </div>
                         </div>
                         <div className="flex items-center space-x-2">
-                          <Badge
-                            className={florist.isActive ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}
+                          <span
+                            className={`px-2 py-1 rounded-full text-sm font-semibold ${
+                              florist.status
+                                ? "bg-green-100 text-green-800"
+                                : "bg-red-100 text-red-800"
+                            }`}
                           >
-                            {florist.isActive ? "Activo" : "Inactivo"}
-                          </Badge>
+                            {florist.status ? "Activo" : "Inactivo"}
+                          </span>
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => handleEdit(florist)}
+                            onClick={() => openEditForm(florist.id)}
                             className="border-slate-200"
                           >
                             <Edit className="w-3 h-3 mr-1" />
@@ -206,20 +376,26 @@ export function FloristManagement({ onNavigate }: FloristManagementProps) {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => toggleActive(florist.id)}
+                            onClick={() =>
+                              toggleActive(florist.id, florist.status)
+                            }
                             className={
-                              florist.isActive ? "border-yellow-200 text-yellow-700" : "border-green-200 text-green-700"
+                              florist.status
+                                ? "border-red-200 text-red-700 hover:bg-red-100"
+                                : "border-green-200 text-green-700 hover:bg-green-100"
                             }
                           >
-                            {florist.isActive ? "Desactivar" : "Activar"}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleDelete(florist.id)}
-                            className="border-red-200 text-red-700 hover:bg-red-50"
-                          >
-                            <Trash2 className="w-3 h-3" />
+                            {florist.status ? (
+                              <>
+                                <Lock className="w-4 h-4 mr-1" />
+                                Desactivar
+                              </>
+                            ) : (
+                              <>
+                                <Unlock className="w-4 h-4 mr-1" />
+                                Activar
+                              </>
+                            )}
                           </Button>
                         </div>
                       </div>
@@ -227,24 +403,26 @@ export function FloristManagement({ onNavigate }: FloristManagementProps) {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                         <div className="flex items-center space-x-2">
                           <Phone className="w-4 h-4 text-slate-400" />
-                          <span className="text-slate-600">{florist.phone}</span>
+                          <span className="text-slate-600">
+                            {florist.phone}
+                          </span>
                         </div>
                         <div className="flex items-center space-x-2">
                           <Mail className="w-4 h-4 text-slate-400" />
-                          <span className="text-slate-600">{florist.email}</span>
+                          <span className="text-slate-600">
+                            {florist.email}
+                          </span>
                         </div>
                       </div>
 
                       <div className="grid grid-cols-2 gap-4 mt-3 pt-3 border-t border-slate-200">
                         <div className="text-center">
-                          <p className="text-lg font-semibold text-slate-800">{florist.completedOrders}</p>
-                          <p className="text-xs text-slate-600">Pedidos completados</p>
-                        </div>
-                        <div className="text-center">
                           <p className="text-lg font-semibold text-slate-800">
-                            {florist.rating > 0 ? florist.rating.toFixed(1) : "N/A"}
+                            {florist.completedOrders}
                           </p>
-                          <p className="text-xs text-slate-600">Calificación promedio</p>
+                          <p className="text-xs text-slate-600">
+                            Pedidos completados
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -259,22 +437,34 @@ export function FloristManagement({ onNavigate }: FloristManagementProps) {
             {isCreating && (
               <Card className="shadow-sm border-slate-200 sticky top-24">
                 <CardHeader>
-                  <CardTitle className="text-slate-800">{editingId ? "Editar Florista" : "Nuevo Florista"}</CardTitle>
+                  <CardTitle className="text-slate-800">
+                    {editingId ? "Editar Florista" : "Nuevo Florista"}
+                  </CardTitle>
                   <CardDescription>
-                    {editingId ? "Modifica los datos del florista" : "Registra un nuevo florista en el sistema"}
+                    {editingId
+                      ? "Modifica los datos del florista"
+                      : "Registra un nuevo florista en el sistema"}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <form onSubmit={handleSubmit} className="space-y-4">
+                  <form
+                    onSubmit={editingId ? handleEdit : handleSubmit}
+                    className="space-y-4"
+                  >
                     <div className="space-y-2">
-                      <Label htmlFor="fullName">Nombre completo</Label>
+                      <Label htmlFor="name">Nombre completo</Label>
                       <Input
-                        id="fullName"
-                        value={formData.fullName}
-                        onChange={(e) => setFormData((prev) => ({ ...prev, fullName: e.target.value }))}
+                        id="name"
+                        value={formData.name}
+                        onChange={handleChange}
                         placeholder="Ej: Carmen López García"
                         required
                       />
+                      {formErrors.name && (
+                        <p className="text-red-600 text-sm mt-1">
+                          {formErrors.name}
+                        </p>
+                      )}
                     </div>
 
                     <div className="space-y-2">
@@ -283,10 +473,15 @@ export function FloristManagement({ onNavigate }: FloristManagementProps) {
                         id="phone"
                         type="tel"
                         value={formData.phone}
-                        onChange={(e) => setFormData((prev) => ({ ...prev, phone: e.target.value }))}
+                        onChange={handleChange}
                         placeholder="+1 234 567 8900"
                         required
                       />
+                      {formErrors.phone && (
+                        <p className="text-red-600 text-sm mt-1">
+                          {formErrors.phone}
+                        </p>
+                      )}
                     </div>
 
                     <div className="space-y-2">
@@ -295,18 +490,45 @@ export function FloristManagement({ onNavigate }: FloristManagementProps) {
                         id="email"
                         type="email"
                         value={formData.email}
-                        onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
+                        onChange={handleChange}
                         placeholder="florista@FLOREVER.com"
                         required
                       />
+                      {formErrors.email && (
+                        <p className="text-red-600 text-sm mt-1">
+                          {formErrors.email}
+                        </p>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="password">Contraseña</Label>
+                      <Input
+                        id="password"
+                        type="password"
+                        value={formData.password || ""}
+                        onChange={handleChange}
+                        placeholder="Contraseña segura"
+                        required={!editingId} // No requerir contraseña al editar
+                      />
+                      {formErrors.password && (
+                        <p className="text-red-600 text-sm mt-1">
+                          {formErrors.password}
+                        </p>
+                      )}
                     </div>
 
                     <div className="flex space-x-2 pt-4">
                       <Button
                         type="submit"
+                        disabled={isSubmitting}
                         className="flex-1 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white"
                       >
-                        {editingId ? "Actualizar" : "Crear"} Florista
+                        {isSubmitting
+                          ? "Procesando..."
+                          : editingId
+                          ? "Actualizar"
+                          : "Crear"}{" "}
+                        Florista
                       </Button>
                       <Button
                         type="button"
@@ -335,25 +557,35 @@ export function FloristManagement({ onNavigate }: FloristManagementProps) {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-600">Activos:</span>
-                    <span className="font-semibold text-green-600">{florists.filter((f) => f.isActive).length}</span>
+                    <span className="font-semibold text-green-600">
+                      {florists.filter((f) => f.status).length}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-600">Inactivos:</span>
-                    <span className="font-semibold text-gray-600">{florists.filter((f) => !f.isActive).length}</span>
+                    <span className="font-semibold text-gray-600">
+                      {florists.filter((f) => !f.status).length}
+                    </span>
                   </div>
                   <div className="border-t pt-4">
                     <div className="flex justify-between">
                       <span className="text-slate-600">Pedidos totales:</span>
-                      <span className="font-semibold">{florists.reduce((sum, f) => sum + f.completedOrders, 0)}</span>
+                      <span className="font-semibold">
+                        {florists.reduce(
+                          (sum, f) =>
+                            sum +
+                            (typeof f.completedOrders === "number" &&
+                            !isNaN(f.completedOrders)
+                              ? f.completedOrders
+                              : 0),
+                          0
+                        )}
+                      </span>
                     </div>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-600">Calificación promedio:</span>
-                    <span className="font-semibold">
-                      {(
-                        florists.filter((f) => f.rating > 0).reduce((sum, f) => sum + f.rating, 0) /
-                        florists.filter((f) => f.rating > 0).length
-                      ).toFixed(1)}
+                    <span className="text-slate-600">
+                      Calificación promedio:
                     </span>
                   </div>
                 </div>
@@ -363,5 +595,5 @@ export function FloristManagement({ onNavigate }: FloristManagementProps) {
         </div>
       </div>
     </div>
-  )
+  );
 }
