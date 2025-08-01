@@ -19,7 +19,7 @@ interface LoginResponse {
   message: string
   data: {
     token: string
-    role: "ADMIN" | "EMPLOYEE" | "CUSTOMER"
+    role: "ADMIN" | "FLORIST" | "CUSTOMER"
   }
   error: boolean
   status: string

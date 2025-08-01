@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Plus, Minus, ShoppingCart, Flower2, Filter, LogOut, User } from "lucide-react"
+import { Plus, Minus, ShoppingCart, Flower2, Filter, LogOut, User, Clock, History } from "lucide-react"
 import type { Screen, UserType } from "@/app/page"
 import { apiService } from "@/lib/api"
 
@@ -32,6 +32,17 @@ interface ArrangementType {
   isActive?: boolean
 }
 
+interface FlowerType {
+  id: number
+  name: string
+  type: string
+  price: number
+  amount: number
+  description: string
+  image: string
+  orderHasFlowers: any[]
+}
+
 interface ApiResponse<T> {
   message: string
   data: T
@@ -47,57 +58,6 @@ const defaultCategories = [
   { id: "Arreglos", name: "Arreglos", icon: "🌺" },
 ]
 
-const flowers = [
-  {
-    id: 1,
-    name: "Rosa Roja",
-    image: "/placeholder.svg?height=150&width=150",
-    category: "roses",
-    color: "red",
-    inStock: true,
-  },
-  {
-    id: 2,
-    name: "Rosa Blanca",
-    image: "/placeholder.svg?height=150&width=150",
-    category: "roses",
-    color: "white",
-    inStock: true,
-  },
-  {
-    id: 3,
-    name: "Tulipán Amarillo",
-    image: "/placeholder.svg?height=150&width=150",
-    category: "tulips",
-    color: "yellow",
-    inStock: true,
-  },
-  {
-    id: 4,
-    name: "Lirio Blanco",
-    image: "/placeholder.svg?height=150&width=150",
-    category: "lilies",
-    color: "white",
-    inStock: true,
-  },
-  {
-    id: 5,
-    name: "Girasol",
-    image: "/placeholder.svg?height=150&width=150",
-    category: "sunflowers",
-    color: "yellow",
-    inStock: true,
-  },
-  {
-    id: 6,
-    name: "Orquídea Morada",
-    image: "/placeholder.svg?height=150&width=150",
-    category: "orchids",
-    color: "purple",
-    inStock: false,
-  },
-]
-
 export function ArrangementBuilder({ onNavigate, onOrderCreate, currentUser, onLogout }: ArrangementBuilderProps) {
   const [selectedCategory, setSelectedCategory] = useState("")
   const [selectedFlowers, setSelectedFlowers] = useState<{ [key: number]: number }>({})
@@ -105,7 +65,9 @@ export function ArrangementBuilder({ onNavigate, onOrderCreate, currentUser, onL
   const [selectedArrangementType, setSelectedArrangementType] = useState<ArrangementType | null>(null)
   const [categories, setCategories] = useState<CategoryType[]>(defaultCategories)
   const [arrangements, setArrangements] = useState<ArrangementType[]>([])
+  const [flowers, setFlowers] = useState<FlowerType[]>([])
   const [loading, setLoading] = useState(false)
+  const [loadingFlowers, setLoadingFlowers] = useState(false)
 
   // Cargar tipos de categorías al montar el componente
   useEffect(() => {
@@ -155,7 +117,30 @@ export function ArrangementBuilder({ onNavigate, onOrderCreate, currentUser, onL
     loadArrangements()
   }, [selectedCategory])
 
+  // Cargar flores desde la API
+  useEffect(() => {
+    const loadFlowers = async () => {
+      try {
+        setLoadingFlowers(true)
+        const response: ApiResponse<FlowerType[]> = await apiService.getFlowers()
+        if (!response.error && response.data) {
+          setFlowers(response.data)
+        }
+      } catch (error) {
+        console.error('Error loading flowers:', error)
+        setFlowers([])
+      } finally {
+        setLoadingFlowers(false)
+      }
+    }
+
+    loadFlowers()
+  }, [])
+
   const addFlower = (flowerId: number) => {
+    const flower = flowers.find(f => f.id === flowerId)
+    if (!flower) return
+
     if (selectedArrangementType) {
       const currentTotal = getTotalFlowers()
       if (currentTotal >= selectedArrangementType.totalQuantityFlowers) {
@@ -163,9 +148,16 @@ export function ArrangementBuilder({ onNavigate, onOrderCreate, currentUser, onL
         return
       }
     }
+
+    const currentFlowerCount = selectedFlowers[flowerId] || 0
+    if (currentFlowerCount >= flower.amount) {
+      alert(`No hay más stock disponible de ${flower.name}. Stock disponible: ${flower.amount}`)
+      return
+    }
+
     setSelectedFlowers((prev) => ({
       ...prev,
-      [flowerId]: (prev[flowerId] || 0) + 1,
+      [flowerId]: currentFlowerCount + 1,
     }))
   }
 
@@ -181,27 +173,72 @@ export function ArrangementBuilder({ onNavigate, onOrderCreate, currentUser, onL
   }
 
   const getTotalPrice = () => {
+    let total = 0
+    
+    // Precio del tipo de arreglo (si está seleccionado)
     if (selectedArrangementType) {
-      return selectedArrangementType.price
+      total += selectedArrangementType.price
     }
-    return 0
+    
+    // Precio de las flores seleccionadas
+    Object.entries(selectedFlowers).forEach(([flowerId, quantity]) => {
+      const flower = flowers.find(f => f.id === Number(flowerId))
+      if (flower) {
+        total += flower.price * quantity
+      }
+    })
+    
+    return total
   }
 
   const getTotalFlowers = () => {
     return Object.values(selectedFlowers).reduce((total, quantity) => total + quantity, 0)
   }
 
-  const handleCreateOrder = () => {
-    const order = {
-      id: `ORD-${Date.now()}`,
-      category: selectedCategory,
-      arrangementType: selectedArrangementType,
-      flowers: selectedFlowers,
-      total: getTotalPrice(),
-      date: new Date().toISOString().split("T")[0],
+  const handleCreateOrder = async () => {
+    if (!selectedArrangementType || !selectedCategory) return
+
+    try {
+      // Encontrar el ID de la categoría seleccionada
+      const selectedCategoryData = arrangements.find(arr => arr.id === selectedArrangementType.id)
+      
+      // Preparar datos de flores en el formato requerido
+      const flowersData = Object.entries(selectedFlowers).map(([flowerId, quantity]) => ({
+        cuantity: quantity,
+        flowerId: Number(flowerId)
+      }))
+
+      const orderData = {
+        category: selectedArrangementType.id, // Usar el ID del tipo de arreglo seleccionado
+        flowers: flowersData
+      }
+
+      console.log('Sending order data:', orderData)
+
+      const response = await apiService.createOrder(orderData)
+      
+      if (!response.error) {
+        // Crear objeto de orden para mostrar en confirmación
+        const order = {
+          id: `ORD-${Date.now()}`,
+          category: selectedCategory,
+          arrangementType: selectedArrangementType,
+          flowers: selectedFlowers,
+          flowersData: flowers, // Agregar la información completa de las flores
+          total: getTotalPrice(),
+          date: new Date().toISOString().split("T")[0],
+          apiResponse: response
+        }
+        
+        onOrderCreate(order)
+        onNavigate("order-confirmation")
+      } else {
+        alert(`Error al crear el pedido: ${response.message}`)
+      }
+    } catch (error) {
+      console.error('Error creating order:', error)
+      alert('Error de conexión al crear el pedido')
     }
-    onOrderCreate(order)
-    onNavigate("order-confirmation")
   }
 
   const handleCategoryChange = (categoryId: string) => {
@@ -211,7 +248,7 @@ export function ArrangementBuilder({ onNavigate, onOrderCreate, currentUser, onL
   }
 
   const filteredFlowers =
-    filterCategory === "all" ? flowers : flowers.filter((flower) => flower.category === filterCategory)
+    filterCategory === "all" ? flowers : flowers.filter((flower) => flower.type.toLowerCase().includes(filterCategory.toLowerCase()))
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-rose-50">
@@ -233,11 +270,11 @@ export function ArrangementBuilder({ onNavigate, onOrderCreate, currentUser, onL
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => onNavigate("client-profile")}
+                  onClick={() => onNavigate("order-history")}
                   className="text-slate-600 hover:text-slate-800"
                 >
-                  <User className="w-4 h-4 mr-2" />
-                  Mi Perfil
+                  <History className="w-4 h-4 mr-2" />
+                  Mis Pedidos
                 </Button>
                 <Button variant="ghost" size="sm" onClick={onLogout} className="text-slate-600 hover:text-slate-800">
                   <LogOut className="w-4 h-4 mr-2" />
@@ -346,65 +383,87 @@ export function ArrangementBuilder({ onNavigate, onOrderCreate, currentUser, onL
                         value={filterCategory}
                         onChange={(e) => setFilterCategory(e.target.value)}
                         className="border border-slate-200 rounded-md px-3 py-1 text-sm"
-                        title="Filtrar por categoría de flores"
+                        title="Filtrar por tipo de flores"
                       >
                         <option value="all">Todas</option>
-                        <option value="roses">Rosas</option>
-                        <option value="tulips">Tulipanes</option>
-                        <option value="lilies">Lirios</option>
-                        <option value="sunflowers">Girasoles</option>
-                        <option value="orchids">Orquídeas</option>
+                        <option value="rosa">Rosas</option>
+                        <option value="bugambilia">Bugambilia</option>
+                        <option value="tulipán">Tulipanes</option>
+                        <option value="lirio">Lirios</option>
+                        <option value="girasol">Girasoles</option>
+                        <option value="orquídea">Orquídeas</option>
                       </select>
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filteredFlowers.map((flower) => (
-                      <div key={flower.id} className="group">
-                        <Card className={`transition-all hover:shadow-md ${!flower.inStock ? "opacity-60" : ""}`}>
-                          <CardContent className="p-4">
-                            <div className="relative mb-3">
-                              <img
-                                src={flower.image || "/placeholder.svg"}
-                                alt={flower.name}
-                                className="w-full h-32 object-cover rounded-lg"
-                              />
-                              {!flower.inStock && (
-                                <Badge className="absolute top-2 right-2 bg-red-100 text-red-800">Agotado</Badge>
-                              )}
-                            </div>
-                            <h3 className="font-medium text-slate-800 mb-3">{flower.name}</h3>
-
-                            {flower.inStock && (
-                              <div className="flex items-center justify-center">
-                                <div className="flex items-center space-x-2">
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => removeFlower(flower.id)}
-                                    disabled={!selectedFlowers[flower.id]}
-                                    className="w-8 h-8 p-0"
-                                  >
-                                    <Minus className="w-3 h-3" />
-                                  </Button>
-                                  <span className="w-8 text-center font-medium">{selectedFlowers[flower.id] || 0}</span>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => addFlower(flower.id)}
-                                    className="w-8 h-8 p-0"
-                                  >
-                                    <Plus className="w-3 h-3" />
-                                  </Button>
-                                </div>
+                  {loadingFlowers ? (
+                    <div className="flex justify-center items-center py-8">
+                      <div className="text-slate-500">Cargando flores...</div>
+                    </div>
+                  ) : flowers.length === 0 ? (
+                    <div className="flex justify-center items-center py-8">
+                      <div className="text-slate-500">No hay flores disponibles</div>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {filteredFlowers.map((flower) => (
+                        <div key={flower.id} className="group">
+                          <Card className={`transition-all hover:shadow-md ${flower.amount === 0 ? "opacity-60" : ""}`}>
+                            <CardContent className="p-4">
+                              <div className="relative mb-3">
+                                <img
+                                  src={flower.image || "/placeholder.svg"}
+                                  alt={flower.name}
+                                  className="w-full h-32 object-cover rounded-lg"
+                                />
+                                {flower.amount === 0 && (
+                                  <Badge className="absolute top-2 right-2 bg-red-100 text-red-800">Agotado</Badge>
+                                )}
+                                {flower.amount > 0 && (
+                                  <Badge className="absolute top-2 left-2 bg-green-100 text-green-800">
+                                    Stock: {flower.amount}
+                                  </Badge>
+                                )}
                               </div>
-                            )}
-                          </CardContent>
-                        </Card>
-                      </div>
-                    ))}
-                  </div>
+                              <h3 className="font-medium text-slate-800 mb-1">{flower.name}</h3>
+                              <p className="text-xs text-slate-500 mb-2">{flower.type}</p>
+                              <p className="text-sm text-slate-600 mb-3 line-clamp-2">{flower.description}</p>
+                              <div className="text-sm font-semibold text-green-600 mb-3">
+                                ${flower.price.toFixed(2)} c/u
+                              </div>
+
+                              {flower.amount > 0 && (
+                                <div className="flex items-center justify-center">
+                                  <div className="flex items-center space-x-2">
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => removeFlower(flower.id)}
+                                      disabled={!selectedFlowers[flower.id]}
+                                      className="w-8 h-8 p-0"
+                                    >
+                                      <Minus className="w-3 h-3" />
+                                    </Button>
+                                    <span className="w-8 text-center font-medium">{selectedFlowers[flower.id] || 0}</span>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => addFlower(flower.id)}
+                                      disabled={selectedFlowers[flower.id] >= flower.amount}
+                                      className="w-8 h-8 p-0"
+                                    >
+                                      <Plus className="w-3 h-3" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              )}
+                            </CardContent>
+                          </Card>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )}
@@ -459,11 +518,29 @@ export function ArrangementBuilder({ onNavigate, onOrderCreate, currentUser, onL
                           <span className="text-slate-600">
                             {flower.name} x{quantity}
                           </span>
+                          <span className="text-slate-600">
+                            ${(flower.price * quantity).toFixed(2)}
+                          </span>
                         </div>
                       )
                     })}
                     <div className="border-t pt-2 mt-2">
-                      <div className="flex justify-between font-semibold">
+                      <div className="flex justify-between text-sm">
+                        <span>Subtotal flores:</span>
+                        <span className="text-slate-600">
+                          ${Object.entries(selectedFlowers).reduce((total, [flowerId, quantity]) => {
+                            const flower = flowers.find(f => f.id === Number(flowerId))
+                            return total + (flower ? flower.price * quantity : 0)
+                          }, 0).toFixed(2)}
+                        </span>
+                      </div>
+                      {selectedArrangementType && (
+                        <div className="flex justify-between text-sm">
+                          <span>Arreglo base:</span>
+                          <span className="text-slate-600">${selectedArrangementType.price.toFixed(2)}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between font-semibold border-t pt-1 mt-1">
                         <span>Total:</span>
                         <span className="text-green-600">${getTotalPrice().toFixed(2)}</span>
                       </div>

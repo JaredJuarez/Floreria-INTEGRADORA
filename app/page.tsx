@@ -6,7 +6,6 @@ import { FloristDashboard } from "@/components/florist-dashboard"
 import { SuperAdminDashboard } from "@/components/superadmin-dashboard"
 import { ArrangementBuilder } from "@/components/arrangement-builder"
 import { OrderConfirmation } from "@/components/order-confirmation"
-import { FloristOrders } from "@/components/florist-orders"
 import { CategoryManagement } from "@/components/category-management"
 import { ProductTypeManagement } from "@/components/product-type-management"
 import { FlowerManagement } from "@/components/flower-management"
@@ -14,6 +13,7 @@ import { FloristManagement } from "@/components/florist-management"
 import { ClientProfile } from "@/components/client-profile"
 import { FloristProfile } from "@/components/florist-profile"
 import { OrderDetails } from "@/components/order-details"
+import { OrderHistory } from "@/components/order-history"
 import { authUtils } from "@/lib/auth"
 
 export type UserType = "client" | "florist" | "superadmin" | null
@@ -23,7 +23,6 @@ export type Screen =
   | "superadmin-dashboard"
   | "arrangement-builder"
   | "order-confirmation"
-  | "florist-orders"
   | "category-management"
   | "product-type-management"
   | "flower-management"
@@ -31,6 +30,7 @@ export type Screen =
   | "client-profile"
   | "florist-profile"
   | "order-details"
+  | "order-history"
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<UserType>(null)
@@ -153,6 +153,8 @@ export default function App() {
         return <FloristProfile onNavigate={navigateTo} />
       case "order-details":
         return <OrderDetails order={currentOrder} onNavigate={navigateTo} />
+      case "order-history":
+        return <OrderHistory onNavigate={navigateTo} />
       default:
         return <LoginScreen onLogin={handleLogin} />
     }
