@@ -44,7 +44,7 @@ export const authUtils = {
     switch (role) {
       case "ADMIN":
         return "superadmin"
-      case "EMPLOYEE":
+      case "FLORIST":
         return "florist"
       case "CUSTOMER":
         return "client"
