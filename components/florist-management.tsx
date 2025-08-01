@@ -28,9 +28,8 @@ import {
 import type { Screen } from "@/app/page";
 
 import { useEffect } from "react";
-import axios from "axios";
 import Swal from "sweetalert2";
-import { set } from "date-fns";
+import { apiService } from "@/lib/api";
 
 interface FloristManagementProps {
   onNavigate: (screen: Screen) => void;
@@ -77,17 +76,14 @@ export function FloristManagement({ onNavigate }: FloristManagementProps) {
   useEffect(() => {
     const fetchFlorists = async () => {
       try {
-        const token = localStorage.getItem("authToken");
-        const response = await axios.get(
-          "http://localhost:8080/api/floristas",
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        console.log("Florists response.data:", response.data);
-        setFlorists(response.data.data);
+        const response = await apiService.getFlorists();
+        console.log("Florists response:", response);
+        if (!response.error) {
+          setFlorists(response.data);
+        } else {
+          setError("No se pudieron cargar los floristas 🥲");
+          Swal.fire("Error", response.message || "No se pudieron cargar los floristas 🥲", "error");
+        }
       } catch (err) {
         console.error("Error fetching florists:", err);
         setError("No se pudieron cargar los floristas 🥲");
@@ -156,7 +152,6 @@ export function FloristManagement({ onNavigate }: FloristManagementProps) {
   };
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const token = localStorage.getItem("authToken");
     const error = validate(formData);
     setFormErrors(error);
     if (Object.keys(error).length > 0) {
@@ -169,34 +164,33 @@ export function FloristManagement({ onNavigate }: FloristManagementProps) {
     }
     setIsSubmitting(true);
     try {
-      await axios.post(
-        "http://localhost:8080/api/floristas",
-        {
-          name: formData.name,
-          phone: formData.phone,
-          email: formData.email,
-          password: formData.password,
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-
-      const updated = await axios.get("http://localhost:8080/api/floristas", {
-        headers: { Authorization: `Bearer ${token}` },
+      const response = await apiService.createFlorist({
+        name: formData.name,
+        phone: formData.phone,
+        email: formData.email,
+        password: formData.password,
       });
-      setFlorists(updated.data.data);
-      resetForm();
-      Swal.fire("Éxito", "Florista creado correctamente 🌸", "success");
+
+      if (!response.error) {
+        const updated = await apiService.getFlorists();
+        if (!updated.error) {
+          setFlorists(updated.data);
+        }
+        resetForm();
+        Swal.fire("Éxito", "Florista creado correctamente 🌸", "success");
+      } else {
+        Swal.fire("Error", response.message || "No se pudo crear el florista 😢", "error");
+      }
     } catch (error) {
       console.error("Error al crear florista:", error);
       Swal.fire("Error", "No se pudo crear el florista 😢", "error");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleEdit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const token = localStorage.getItem("authToken");
 
     try {
       const floristToUpdate = florists.find((f) => f.id === editingId);
@@ -213,19 +207,21 @@ export function FloristManagement({ onNavigate }: FloristManagementProps) {
         floristPayload.password = formData.password;
       }
 
-      await axios.put("http://localhost:8080/api/floristas", floristPayload, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await apiService.updateFlorist(floristPayload);
 
-      setFlorists((prev) =>
-        prev.map((f) => (f.id === editingId ? { ...f, ...floristPayload } : f))
-      );
-      resetForm();
-      Swal.fire(
-        "Actualizado",
-        "Florista actualizado exitosamente ✅",
-        "success"
-      );
+      if (!response.error) {
+        setFlorists((prev) =>
+          prev.map((f) => (f.id === editingId ? { ...f, ...floristPayload } : f))
+        );
+        resetForm();
+        Swal.fire(
+          "Actualizado",
+          "Florista actualizado exitosamente ✅",
+          "success"
+        );
+      } else {
+        Swal.fire("Error", response.message || "No se pudo actualizar el florista 😢", "error");
+      }
     } catch (error) {
       console.error("Error al actualizar florista:", error);
       Swal.fire("Error", "No se pudo actualizar el florista 😢", "error");
@@ -247,31 +243,23 @@ export function FloristManagement({ onNavigate }: FloristManagementProps) {
   };
 
   const toggleActive = async (id: string, currentStatus: boolean) => {
-    const token = localStorage.getItem("authToken");
-    if (!token) {
-      Swal.fire("Error", "No estás autenticado", "error");
-      return;
-    }
-
     try {
-      await axios.patch(
-        `http://localhost:8080/api/floristas/${id}/status?status=${!currentStatus}`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setFlorists((prev) =>
-        prev.map((f) => (f.id === id ? { ...f, status: !currentStatus } : f))
-      );
-      Swal.fire(
-        "Éxito",
-        `Florista ${!currentStatus ? "activado" : "desactivado"} correctamente`,
-        "success"
-      );
+      const response = await apiService.toggleFloristStatus(id, !currentStatus);
+      
+      if (!response.error) {
+        setFlorists((prev) =>
+          prev.map((f) => (f.id === id ? { ...f, status: !currentStatus } : f))
+        );
+        Swal.fire(
+          "Éxito",
+          `Florista ${!currentStatus ? "activado" : "desactivado"} correctamente`,
+          "success"
+        );
+      } else {
+        Swal.fire("Error", response.message || "No se pudo cambiar el estado del florista", "error");
+      }
     } catch (error: any) {
-      console.error(
-        "Error al cambiar el estado:",
-        error.response?.data || error.message
-      );
+      console.error("Error al cambiar el estado:", error);
       Swal.fire(
         "Error",
         "No se pudo cambiar el estado del florista, intenta de nuevo",
