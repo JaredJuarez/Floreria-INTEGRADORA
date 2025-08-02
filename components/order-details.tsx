@@ -119,7 +119,7 @@ export function OrderDetails({ order, onNavigate }: OrderDetailsProps) {
                     {Object.entries(orderData.flowers).map(([flowerId, quantity]) => (
                       <div key={flowerId} className="flex justify-between items-center p-2 bg-slate-50 rounded">
                         <span className="text-slate-700">
-                          {flowerNames[flowerId as keyof typeof flowerNames]} x{quantity as number}
+                          {flowerNames[flowerId as unknown as keyof typeof flowerNames]} x{Number(quantity)}
                         </span>
                       </div>
                     ))}

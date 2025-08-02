@@ -134,7 +134,7 @@ export function BouquetManagement({ onNavigate }: BouquetManagementProps) {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => onNavigate("admin-dashboard")}
+                onClick={() => onNavigate("superadmin-dashboard")}
                 className="text-slate-600 hover:text-slate-800"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />

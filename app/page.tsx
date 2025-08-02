@@ -7,6 +7,7 @@ import { SuperAdminDashboard } from "@/components/superadmin-dashboard"
 import { ArrangementBuilder } from "@/components/arrangement-builder"
 import { OrderConfirmation } from "@/components/order-confirmation"
 import { CategoryManagement } from "@/components/category-management"
+import { ProductCategoryManagement } from "@/components/product-category-management"
 import { ProductTypeManagement } from "@/components/product-type-management"
 import { FlowerManagement } from "@/components/flower-management"
 import { FloristManagement } from "@/components/florist-management"
@@ -24,6 +25,7 @@ export type Screen =
   | "arrangement-builder"
   | "order-confirmation"
   | "category-management"
+  | "product-category-management"
   | "product-type-management"
   | "flower-management"
   | "florist-management"
@@ -137,10 +139,10 @@ export default function App() {
         )
       case "order-confirmation":
         return <OrderConfirmation order={currentOrder} onNavigate={navigateTo} />
-      case "florist-orders":
-        return <FloristOrders onNavigate={navigateTo} onOrderSelect={setCurrentOrder} />
       case "category-management":
         return <CategoryManagement onNavigate={navigateTo} />
+      case "product-category-management":
+        return <ProductCategoryManagement onNavigate={navigateTo} />
       case "product-type-management":
         return <ProductTypeManagement onNavigate={navigateTo} />
       case "flower-management":
