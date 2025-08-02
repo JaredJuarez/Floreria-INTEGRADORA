@@ -128,10 +128,21 @@ export function FloristDashboard({
           apiService.getOrdersByStatus("CLOSED"),
         ]);
 
-      if (!openResponse.error) setOpenOrders(openResponse.data || []);
-      if (!processingResponse.error)
+      // Limpiar estados primero y luego actualizar
+      setOpenOrders([]);
+      setProcessingOrders([]);
+      setClosedOrders([]);
+      
+      // Actualizar con datos frescos del servidor
+      if (!openResponse.error) {
+        setOpenOrders(openResponse.data || []);
+      }
+      if (!processingResponse.error) {
         setProcessingOrders(processingResponse.data || []);
-      if (!closedResponse.error) setClosedOrders(closedResponse.data || []);
+      }
+      if (!closedResponse.error) {
+        setClosedOrders(closedResponse.data || []);
+      }
     } catch (error) {
       console.error("Error fetching orders:", error);
     } finally {
@@ -158,11 +169,31 @@ export function FloristDashboard({
       setActionLoading(orderId);
       const response = await apiService.assignOrder(orderId);
       if (!response.error) {
-        // Refrescar las órdenes después de asignar
-        await fetchOrdersByStatus();
+        // Actualizar los estados localmente primero
+        const orderToMove = openOrders.find(order => order.id === orderId);
+        if (orderToMove) {
+          // Remover de openOrders
+          setOpenOrders(prev => prev.filter(order => order.id !== orderId));
+          // Agregar a processingOrders con estado actualizado
+          const updatedOrder = { ...orderToMove, status: 'PROCESSING' };
+          setProcessingOrders(prev => [updatedOrder, ...prev]);
+        }
+        
+        // Cerrar modal si está abierto para esta orden
+        if (selectedOrder?.id === orderId) {
+          setShowOrderModal(false);
+          setSelectedOrder(null);
+        }
+        
+        // Refrescar las órdenes del servidor como backup
+        setTimeout(() => {
+          fetchOrdersByStatus();
+        }, 500);
       }
     } catch (error) {
       console.error("Error assigning order:", error);
+      // En caso de error, refrescar desde el servidor
+      fetchOrdersByStatus();
     } finally {
       setActionLoading(null);
     }
@@ -174,11 +205,31 @@ export function FloristDashboard({
       setActionLoading(orderId);
       const response = await apiService.closeOrder(orderId);
       if (!response.error) {
-        // Refrescar las órdenes después de cerrar
-        await fetchOrdersByStatus();
+        // Actualizar los estados localmente primero
+        const orderToMove = processingOrders.find(order => order.id === orderId);
+        if (orderToMove) {
+          // Remover de processingOrders
+          setProcessingOrders(prev => prev.filter(order => order.id !== orderId));
+          // Agregar a closedOrders con estado actualizado
+          const updatedOrder = { ...orderToMove, status: 'CLOSED' };
+          setClosedOrders(prev => [updatedOrder, ...prev]);
+        }
+        
+        // Cerrar modal si está abierto para esta orden
+        if (selectedOrder?.id === orderId) {
+          setShowOrderModal(false);
+          setSelectedOrder(null);
+        }
+        
+        // Refrescar las órdenes del servidor como backup
+        setTimeout(() => {
+          fetchOrdersByStatus();
+        }, 500);
       }
     } catch (error) {
       console.error("Error closing order:", error);
+      // En caso de error, refrescar desde el servidor
+      fetchOrdersByStatus();
     } finally {
       setActionLoading(null);
     }
@@ -922,10 +973,7 @@ export function FloristDashboard({
               <div className="flex space-x-3">
                 {selectedOrder.status === "OPEN" && (
                   <Button
-                    onClick={() => {
-                      handleAssignOrder(selectedOrder.id);
-                      setShowOrderModal(false);
-                    }}
+                    onClick={() => handleAssignOrder(selectedOrder.id)}
                     className="bg-blue-600 hover:bg-blue-700"
                     disabled={actionLoading === selectedOrder.id}
                   >
@@ -935,10 +983,7 @@ export function FloristDashboard({
                 )}
                 {selectedOrder.status === "PROCESSING" && (
                   <Button
-                    onClick={() => {
-                      handleCloseOrder(selectedOrder.id);
-                      setShowOrderModal(false);
-                    }}
+                    onClick={() => handleCloseOrder(selectedOrder.id)}
                     className="bg-green-600 hover:bg-green-700"
                     disabled={actionLoading === selectedOrder.id}
                   >
