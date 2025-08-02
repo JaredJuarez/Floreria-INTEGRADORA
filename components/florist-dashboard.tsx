@@ -56,6 +56,15 @@ interface OrderFlower {
   id: number;
   cuantity: number;
   price: number;
+  flowers: {
+    id: number;
+    name: string;
+    type: string;
+    price: number;
+    amount: number;
+    description: string;
+    image: string;
+  };
 }
 
 interface Category {
@@ -937,30 +946,60 @@ export function FloristDashboard({
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {selectedOrder.orderHasFlowers.map((flower, index) => (
+                    {selectedOrder.orderHasFlowers.map((orderFlower, index) => (
                       <div
-                        key={flower.id}
-                        className="flex justify-between items-center p-3 bg-slate-50 rounded-lg"
+                        key={orderFlower.id}
+                        className="flex justify-between items-center p-4 bg-slate-50 rounded-lg border border-slate-100"
                       >
-                        <div className="flex items-center space-x-3">
-                          <div className="w-8 h-8 bg-gradient-to-br from-pink-400 to-rose-500 rounded-full flex items-center justify-center">
-                            <Flower2 className="w-4 h-4 text-white" />
+                        <div className="flex items-center space-x-4">
+                          {/* Imagen de la flor */}
+                          <div className="w-12 h-12 rounded-lg overflow-hidden bg-gradient-to-br from-pink-400 to-rose-500 flex items-center justify-center">
+                            {orderFlower.flowers?.image ? (
+                              <img 
+                                src={orderFlower.flowers.image} 
+                                alt={orderFlower.flowers.name}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = 'none';
+                                  e.currentTarget.parentElement!.innerHTML = '<div class="w-4 h-4 text-white"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></div>';
+                                }}
+                              />
+                            ) : (
+                              <Flower2 className="w-6 h-6 text-white" />
+                            )}
                           </div>
-                          <div>
-                            <p className="text-sm font-medium">
-                              Flor #{flower.id}
+                          
+                          {/* Información de la flor */}
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-2 mb-1">
+                              <p className="text-sm font-semibold text-slate-800">
+                                {orderFlower.flowers?.name || `Flor #${orderFlower.id}`}
+                              </p>
+                              <Badge variant="outline" className="text-xs">
+                                {orderFlower.flowers?.type || 'Tipo no especificado'}
+                              </Badge>
+                            </div>
+                            <p className="text-xs text-slate-600 mb-1">
+                              Cantidad: {orderFlower.cuantity} unidades
                             </p>
-                            <p className="text-xs text-slate-600">
-                              Cantidad: {flower.cuantity}
-                            </p>
+                            {orderFlower.flowers?.description && (
+                              <p className="text-xs text-slate-500 truncate max-w-md">
+                                {orderFlower.flowers.description}
+                              </p>
+                            )}
                           </div>
                         </div>
+                        
+                        {/* Precios */}
                         <div className="text-right">
-                          <p className="text-sm font-medium">
-                            ${flower.price.toFixed(2)}
+                          <p className="text-sm font-semibold text-slate-800">
+                            ${orderFlower.price.toFixed(2)}
                           </p>
                           <p className="text-xs text-slate-600">
-                            ${(flower.price / flower.cuantity).toFixed(2)} c/u
+                            ${(orderFlower.price / orderFlower.cuantity).toFixed(2)} c/u
+                          </p>
+                          <p className="text-xs text-green-600">
+                            Stock: {orderFlower.flowers?.amount || 'N/A'}
                           </p>
                         </div>
                       </div>
