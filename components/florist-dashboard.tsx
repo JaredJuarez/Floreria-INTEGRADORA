@@ -92,34 +92,31 @@ export function FloristDashboard({
     "OPEN"
   );
   useEffect(() => {
-    const token = localStorage.getItem("authToken"); // O donde tengas guardado el token
-
-    if (!token) {
-      setError("No estás autenticado");
-      setLoading(false);
-      return;
-    }
-
-    fetch("http://localhost:8080/api/floristas/me", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: "application/json",
-      },
-    })
-      .then(async (res) => {
-        if (!res.ok) {
-          const errorData = await res.json();
-          throw new Error(errorData.message || "Error al obtener perfil");
+    const fetchFloristProfile = async () => {
+      try {
+        const response = await apiService.getFloristProfile();
+        
+        if (response.error) {
+          if (response.status === 'UNAUTHORIZED') {
+            setError("No estás autenticado");
+            // Opcional: redirigir al login
+            onLogout();
+          } else {
+            setError(response.message || "Error al obtener perfil");
+          }
+        } else {
+          setProfile(response.data);
         }
-        return res.json();
-      })
-      .then((data) => {
-        if (data.error) throw new Error(data.message || "Error en respuesta");
-        setProfile(data.data);
-      })
-      .catch((e) => setError(e.message))
-      .finally(() => setLoading(false));
-  }, []);
+      } catch (error) {
+        console.error('Error fetching florist profile:', error);
+        setError("Error de conexión al servidor");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFloristProfile();
+  }, [onLogout]);
   // Obtener órdenes por estado
   const fetchOrdersByStatus = async () => {
     try {

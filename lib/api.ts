@@ -495,5 +495,55 @@ export const apiService = {
         status: 'CONNECTION_ERROR'
       };
     }
+  },
+
+  // Obtener perfil del florista actual
+  getFloristProfile: async () => {
+    try {
+      const token = getAuthToken();
+      if (!token) {
+        return {
+          error: true,
+          message: 'No hay token de autenticación',
+          status: 'UNAUTHORIZED'
+        };
+      }
+
+      const response = await fetch(`${API_URL}/floristas/me`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          return {
+            error: true,
+            message: 'Tu sesión ha expirado, por favor inicia sesión nuevamente',
+            status: 'UNAUTHORIZED'
+          };
+        } else {
+          return {
+            error: true,
+            message: `Error del servidor: ${response.status}`,
+            status: 'ERROR'
+          };
+        }
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error fetching florist profile:', error);
+      return {
+        error: true,
+        message: 'Error de conexión al servidor',
+        status: 'CONNECTION_ERROR'
+      };
+    }
   }
 };
