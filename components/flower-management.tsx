@@ -2,67 +2,139 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, Plus, Edit, Trash2, Flower2 } from "lucide-react"
 import type { Screen } from "@/app/page"
 import Swal from "sweetalert2"
+import { apiService } from "@/lib/api"
 
 interface FlowerManagementProps {
   onNavigate: (screen: Screen) => void
 }
 
 interface Flower {
-  id: string
+  id: number
   name: string
-  color: string
-  inStock: boolean
+  type: string
+  price: number
+  amount: number
+  description: string
+  image: string
 }
 
-const initialFlowers: Flower[] = [
-  { id: "1", name: "Rosa Roja", color: "Rojo", inStock: true },
-  { id: "2", name: "Rosa Blanca", color: "Blanco", inStock: true },
-  { id: "3", name: "Orquídea Morada", color: "Morado", inStock: false },
-]
-
 export function FlowerManagement({ onNavigate }: FlowerManagementProps) {
-  const [flowers, setFlowers] = useState<Flower[]>(initialFlowers)
+  const [flowers, setFlowers] = useState<Flower[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
   const [isCreating, setIsCreating] = useState(false)
-  const [editingId, setEditingId] = useState<string | null>(null)
-  const [formData, setFormData] = useState({ name: "", color: "" })
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [formData, setFormData] = useState({ 
+    name: "", 
+    type: "", 
+    price: "", 
+    amount: "", 
+    description: "", 
+    image: "" 
+  })
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Cargar flores al iniciar
+  useEffect(() => {
+    const fetchFlowers = async () => {
+      try {
+        setLoading(true)
+        const response = await apiService.getAllFlowers()
+        if (!response.error) {
+          setFlowers(response.data || [])
+        } else {
+          setError("No se pudieron cargar las flores")
+          Swal.fire("Error", response.message || "No se pudieron cargar las flores", "error")
+        }
+      } catch (err) {
+        console.error('Error fetching flowers:', err)
+        setError("Error de conexión al servidor")
+        Swal.fire("Error", "Error de conexión al servidor", "error")
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchFlowers()
+  }, [])
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    const newFlower: Flower = {
-      id: editingId || Date.now().toString(),
+    const flowerData = {
       name: formData.name,
-      color: formData.color,
-      inStock: true,
+      type: formData.type,
+      price: Number.parseFloat(formData.price),
+      amount: Number.parseInt(formData.amount),
+      description: formData.description,
+      image: formData.image,
     }
 
-    if (editingId) {
-      setFlowers((prev) => prev.map((f) => (f.id === editingId ? newFlower : f)))
-    } else {
-      setFlowers((prev) => [...prev, newFlower])
+    try {
+      if (editingId) {
+        // Actualizar flor existente
+        const response = await apiService.updateFlower({
+          id: editingId,
+          ...flowerData
+        })
+        if (!response.error) {
+          // Recargar flores
+          const flowersResponse = await apiService.getAllFlowers()
+          if (!flowersResponse.error) {
+            setFlowers(flowersResponse.data || [])
+          }
+          resetForm()
+          Swal.fire("Éxito", "Flor actualizada correctamente", "success")
+        } else {
+          Swal.fire("Error", response.message || "No se pudo actualizar la flor", "error")
+        }
+      } else {
+        // Crear nueva flor
+        const response = await apiService.createFlower(flowerData)
+        if (!response.error) {
+          // Recargar flores
+          const flowersResponse = await apiService.getAllFlowers()
+          if (!flowersResponse.error) {
+            setFlowers(flowersResponse.data || [])
+          }
+          resetForm()
+          Swal.fire("Éxito", "Flor creada correctamente", "success")
+        } else {
+          Swal.fire("Error", response.message || "No se pudo crear la flor", "error")
+        }
+      }
+    } catch (error) {
+      console.error('Error saving flower:', error)
+      Swal.fire("Error", "Error de conexión al servidor", "error")
     }
-    resetForm()
   }
 
   const handleEdit = (flower: Flower) => {
     setEditingId(flower.id)
-    setFormData({ name: flower.name, color: flower.color })
+    setFormData({ 
+      name: flower.name, 
+      type: flower.type,
+      price: flower.price.toString(),
+      amount: flower.amount.toString(),
+      description: flower.description,
+      image: flower.image
+    })
     setIsCreating(true)
   }
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (flower: Flower) => {
     const result = await Swal.fire({
       title: "¿Estás seguro?",
-      text: "¿Eliminar esta flor?",
+      text: `¿Eliminar la flor "${flower.name}"?`,
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#d33",
@@ -72,19 +144,56 @@ export function FlowerManagement({ onNavigate }: FlowerManagementProps) {
     })
 
     if (result.isConfirmed) {
-      setFlowers((prev) => prev.filter((f) => f.id !== id))
-      Swal.fire("Eliminado", "La flor ha sido eliminada", "success")
+      try {
+        const response = await apiService.deleteFlower(flower)
+        if (!response.error) {
+          // Recargar flores
+          const flowersResponse = await apiService.getAllFlowers()
+          if (!flowersResponse.error) {
+            setFlowers(flowersResponse.data || [])
+          }
+          Swal.fire("Eliminado", "La flor ha sido eliminada", "success")
+        } else {
+          Swal.fire("Error", response.message || "No se pudo eliminar la flor", "error")
+        }
+      } catch (error) {
+        console.error('Error deleting flower:', error)
+        Swal.fire("Error", "Error de conexión al servidor", "error")
+      }
     }
   }
 
-  const toggleStock = (id: string) => {
-    setFlowers((prev) => prev.map((f) => (f.id === id ? { ...f, inStock: !f.inStock } : f)))
+  const resetForm = () => {
+    setFormData({ 
+      name: "", 
+      type: "", 
+      price: "", 
+      amount: "", 
+      description: "", 
+      image: "" 
+    })
+    setIsCreating(false)
+    setEditingId(null)
   }
 
-  const resetForm = () => {
-    setFormData({ name: "", color: "" })
-    setEditingId(null)
-    setIsCreating(false)
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-rose-50">
+        <div className="flex justify-center items-center min-h-screen">
+          <p className="text-gray-500 text-lg">Cargando flores...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-rose-50">
+        <div className="flex justify-center items-center min-h-screen">
+          <p className="text-red-600 text-lg font-semibold">{error}</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -135,8 +244,8 @@ export function FlowerManagement({ onNavigate }: FlowerManagementProps) {
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center space-x-3">
                           <h3 className="font-semibold text-slate-800">{flower.name}</h3>
-                          <Badge className={flower.inStock ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>
-                            {flower.inStock ? "En stock" : "Agotado"}
+                          <Badge className="bg-green-100 text-green-800">
+                            Stock: {flower.amount}
                           </Badge>
                         </div>
                         <div className="flex items-center space-x-2">
@@ -151,26 +260,18 @@ export function FlowerManagement({ onNavigate }: FlowerManagementProps) {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => toggleStock(flower.id)}
-                            className={
-                              flower.inStock ? "border-yellow-200 text-yellow-700" : "border-green-200 text-green-700"
-                            }
-                          >
-                            {flower.inStock ? "Marcar agotado" : "Marcar en stock"}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleDelete(flower.id)}
+                            onClick={() => handleDelete(flower)}
                             className="border-red-200 text-red-700 hover:bg-red-50"
                           >
                             <Trash2 className="w-3 h-3" />
                           </Button>
                         </div>
                       </div>
-                      <p className="text-sm text-slate-600">
-                        Color: <span className="font-medium">{flower.color}</span>
-                      </p>
+                      <div className="text-sm text-slate-600 space-y-1">
+                        <p>Tipo: <span className="font-medium">{flower.type}</span></p>
+                        <p>Precio: <span className="font-medium">${flower.price}</span></p>
+                        <p>Descripción: <span className="font-medium">{flower.description}</span></p>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -197,11 +298,51 @@ export function FlowerManagement({ onNavigate }: FlowerManagementProps) {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="color">Color</Label>
+                      <Label htmlFor="type">Tipo</Label>
                       <Input
-                        id="color"
-                        value={formData.color}
-                        onChange={(e) => setFormData((prev) => ({ ...prev, color: e.target.value }))}
+                        id="type"
+                        value={formData.type}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, type: e.target.value }))}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="price">Precio</Label>
+                      <Input
+                        id="price"
+                        type="number"
+                        step="0.01"
+                        value={formData.price}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, price: e.target.value }))}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="amount">Cantidad</Label>
+                      <Input
+                        id="amount"
+                        type="number"
+                        value={formData.amount}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, amount: e.target.value }))}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="description">Descripción</Label>
+                      <Input
+                        id="description"
+                        value={formData.description}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="image">URL de Imagen</Label>
+                      <Input
+                        id="image"
+                        type="url"
+                        value={formData.image}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, image: e.target.value }))}
                         required
                       />
                     </div>

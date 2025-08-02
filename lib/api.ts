@@ -545,5 +545,289 @@ export const apiService = {
         status: 'CONNECTION_ERROR'
       };
     }
+  },
+
+  // ===== GESTIÓN DE CATEGORÍAS =====
+
+  // Obtener todas las categorías
+  getCategories: async () => {
+    try {
+      const token = getAuthToken();
+      const response = await fetch(`${API_URL}/category`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` })
+        }
+      });
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      return {
+        error: true,
+        message: 'Error de conexión al servidor',
+        status: 'CONNECTION_ERROR'
+      };
+    }
+  },
+
+  // Obtener una categoría por ID
+  getCategoryById: async (id: number) => {
+    try {
+      const token = getAuthToken();
+      const response = await fetch(`${API_URL}/category/${id}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` })
+        }
+      });
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error fetching category:', error);
+      return {
+        error: true,
+        message: 'Error de conexión al servidor',
+        status: 'CONNECTION_ERROR'
+      };
+    }
+  },
+
+  // Crear nueva categoría
+  createCategory: async (categoryData: {
+    name: string;
+    description: string;
+    price: number;
+    totalQuantityFlowers: number;
+    typeCategory: string;
+  }) => {
+    try {
+      const token = getAuthToken();
+      const response = await fetch(`${API_URL}/category`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` })
+        },
+        body: JSON.stringify(categoryData)
+      });
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error creating category:', error);
+      return {
+        error: true,
+        message: 'Error de conexión al servidor',
+        status: 'CONNECTION_ERROR'
+      };
+    }
+  },
+
+  // Actualizar categoría
+  updateCategory: async (id: number, categoryData: {
+    name: string;
+    description: string;
+    price: number;
+    totalQuantityFlowers: number;
+    typeCategory: string;
+  }) => {
+    try {
+      const token = getAuthToken();
+      const response = await fetch(`${API_URL}/category/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` })
+        },
+        body: JSON.stringify(categoryData)
+      });
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error updating category:', error);
+      return {
+        error: true,
+        message: 'Error de conexión al servidor',
+        status: 'CONNECTION_ERROR'
+      };
+    }
+  },
+
+  // Eliminar categoría
+  deleteCategory: async (id: number) => {
+    try {
+      const token = getAuthToken();
+      const response = await fetch(`${API_URL}/category/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` })
+        }
+      });
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error deleting category:', error);
+      return {
+        error: true,
+        message: 'Error de conexión al servidor',
+        status: 'CONNECTION_ERROR'
+      };
+    }
+  },
+
+  // ===== GESTIÓN DE FLORES =====
+
+  // Obtener todas las flores (ya existe pero la incluyo por consistencia)
+  getAllFlowers: async () => {
+    try {
+      const token = getAuthToken();
+      const response = await fetch(`${API_URL}/flowers`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` })
+        }
+      });
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error fetching flowers:', error);
+      return {
+        error: true,
+        message: 'Error de conexión al servidor',
+        status: 'CONNECTION_ERROR'
+      };
+    }
+  },
+
+  // Obtener una flor por ID
+  getFlowerById: async (id: number) => {
+    try {
+      const token = getAuthToken();
+      const response = await fetch(`${API_URL}/flowers/${id}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` })
+        }
+      });
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error fetching flower:', error);
+      return {
+        error: true,
+        message: 'Error de conexión al servidor',
+        status: 'CONNECTION_ERROR'
+      };
+    }
+  },
+
+  // Crear nueva flor
+  createFlower: async (flowerData: {
+    name: string;
+    type: string;
+    price: number;
+    amount: number;
+    description: string;
+    image: string;
+  }) => {
+    try {
+      const token = getAuthToken();
+      const response = await fetch(`${API_URL}/flowers`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` })
+        },
+        body: JSON.stringify(flowerData)
+      });
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error creating flower:', error);
+      return {
+        error: true,
+        message: 'Error de conexión al servidor',
+        status: 'CONNECTION_ERROR'
+      };
+    }
+  },
+
+  // Actualizar flor
+  updateFlower: async (flowerData: {
+    id: number;
+    name: string;
+    type: string;
+    price: number;
+    amount: number;
+    description: string;
+    image: string;
+  }) => {
+    try {
+      const token = getAuthToken();
+      const response = await fetch(`${API_URL}/flowers`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` })
+        },
+        body: JSON.stringify(flowerData)
+      });
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error updating flower:', error);
+      return {
+        error: true,
+        message: 'Error de conexión al servidor',
+        status: 'CONNECTION_ERROR'
+      };
+    }
+  },
+
+  // Eliminar flor
+  deleteFlower: async (flowerData: {
+    id: number;
+    name: string;
+    type: string;
+    price: number;
+    amount: number;
+    description: string;
+    image: string;
+  }) => {
+    try {
+      const token = getAuthToken();
+      const response = await fetch(`${API_URL}/flowers`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` })
+        },
+        body: JSON.stringify(flowerData)
+      });
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error deleting flower:', error);
+      return {
+        error: true,
+        message: 'Error de conexión al servidor',
+        status: 'CONNECTION_ERROR'
+      };
+    }
   }
 };
